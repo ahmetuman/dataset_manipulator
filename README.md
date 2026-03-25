@@ -4,7 +4,7 @@
 
 Fonksiyonlar COCO ve YOLO formatı için hazırlanacak.
 
-SETUP.PY DAHA ÇALIŞMADI AZ YOLUMUZ BELLİ OLSUN ÖLE ÇALIŞTIRCAM
+I basically rewrite already existing functions and create a package. Also adding new features on the way.
 
 ## Features
 
