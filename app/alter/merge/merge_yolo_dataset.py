@@ -10,7 +10,6 @@ UNWANTED_CLASS = "Remove"
 
 
 class YoloDatasetMerger:
-
     def __init__(self, datasets_root_directory, output_directory):
         self.datasets_root_directory = datasets_root_directory
         self.output_directory = output_directory
