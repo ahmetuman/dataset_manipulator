@@ -1,6 +1,5 @@
 from setuptools import setup, find_packages
 
-
 setup(
     name="dataset_manipulator",
     version="0.0.1",
