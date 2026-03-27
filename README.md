@@ -59,7 +59,7 @@ This feature helps us to remove unwanted labels and move images that only contai
 
 ### Alter: Edit
 
-[COMING SOON]: Edit labels, will group same ones.
+This feature shows each label one by one. If you wish to alter the label's name you can simply enter new name and approve it afterwards, or can skip with pressing `Enter`. At the end of editing if there are same labels code will group same labels under one (e.g. There won't be 1: Helmet, 3: Helmet, 4: Helmet classes they all will be under 1st ID) and will print old to new count of labels. 
 
 ### Undecided Parent Title: COCO to YOLO & YOLO to COCO Conversion
 
@@ -70,5 +70,4 @@ This feature helps us to remove unwanted labels and move images that only contai
 ### Compare
 
 [COMING SOON]: Compare how similar 2 datasets using **Analyze: Validate** metrics. 
-
 

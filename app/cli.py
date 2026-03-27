@@ -15,6 +15,8 @@ from app.alter.remove.remove_from_coco_dataset import CocoLabelRemover
 from app.alter.edit.edit_yolo_dataset import YoloLabelEditor
 from app.alter.edit.edit_coco_dataset import CocoLabelEditor
 
+from app.analyze.validate.validate_dataset import DatasetValidator
+
 VERSION = "0.0.1"
 
 class YOLO:
@@ -65,15 +67,33 @@ class app:
     def version(self):
         print(VERSION)
 
+    def validate(self, images_directory_path, test_run: bool = True):
+        dataset_validator = DatasetValidator(images_directory_path, test_run)
+        dataset_validator.validate()
+
     def help(self):
         print("\n--- HOW TO USE THIS APP ---\n")
 
-        print("$ app {dataset format (either YOLO or COCO)} {desired function} {parameters of function if needed} {input dataset(s) path}\n")
+        print("$ app {dataset format (either YOLO or COCO or nothing)} {desired function} {parameters of function if needed} {input dataset(s) path}")
+        print('e.g. $ app yolo visualize "datasets/colored_yolo_dataset"\n')
 
+        print("\nCHECK README.md FOR ALL EXISTING FUNCTIONS AND THEIR EXPLANATIONS\n")
+        
+        print("Analyze")
         print(" -> Feature 1: Visualize")
-        print("... \n" \
-        "...\n" \
-        "...")
+        print(" -> Feature 2: Validate")
+
+        print("-"*50)
+
+        print("Alter")
+        print(" -> Feature 1: Edit")
+        print(" -> Feature 2: Merge")
+        print(" -> Feature 3: Remove")
+
+        print("-"*50)
+
+
+
 
 
 def main(args=None):
