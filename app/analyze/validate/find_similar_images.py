@@ -273,8 +273,3 @@ class SimilarityCalculator:
         print(f"\nTotal: {total_images} images and {total_labels} labels {action}")
         print(f"  Exact duplicates: {exact_deleted_images}")
         print(f"  Perceptual duplicates: {perceptual_deleted_images}")
-
-
-if __name__ == "__main__":
-    a = SimilarityCalculator("/home/auman/Dev/Data/ppe_datasets/source_data/coco_formatted_source/hard_helmet/valid (Copy)")
-    a.calculate_similarity()

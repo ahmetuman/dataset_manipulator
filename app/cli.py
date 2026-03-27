@@ -17,6 +17,8 @@ from app.alter.edit.edit_coco_dataset import CocoLabelEditor
 
 from app.analyze.validate.validate_dataset import DatasetValidator
 
+from app.convert.convert_yolo_to_coco import YOLOtoCOCOConverter
+
 VERSION = "0.0.1"
 
 class YOLO:
@@ -38,6 +40,10 @@ class YOLO:
     def edit(self, dataset_directory_path):
         yolo_label_editor = YoloLabelEditor(dataset_directory_path)
         yolo_label_editor.edit()
+
+    def convert(self, dataset_directory_path):
+        yolo_to_coco_converter = YOLOtoCOCOConverter(dataset_directory_path)
+        yolo_to_coco_converter.convert()
 
 class COCO:
     def __init__(self):
