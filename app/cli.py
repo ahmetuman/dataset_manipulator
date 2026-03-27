@@ -13,7 +13,7 @@ from app.alter.remove.remove_from_yolo_dataset import YoloLabelRemover
 from app.alter.remove.remove_from_coco_dataset import CocoLabelRemover
 
 from app.alter.edit.edit_yolo_dataset import YoloLabelEditor
-
+from app.alter.edit.edit_coco_dataset import CocoLabelEditor
 
 VERSION = "0.0.1"
 
@@ -50,8 +50,12 @@ class COCO:
         yolo_dataset_merger.merge()
 
     def remove(self, dataset_directory_path):
-        yolo_dataset_remover = CocoLabelRemover(dataset_directory_path)
-        yolo_dataset_remover.remove()
+        coco_dataset_remover = CocoLabelRemover(dataset_directory_path)
+        coco_dataset_remover.remove()
+
+    def edit(self, dataset_directory_path):
+        coco_label_editor = CocoLabelEditor(dataset_directory_path)
+        coco_label_editor.edit()
 
 class app:
     def __init__(self):
