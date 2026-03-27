@@ -219,3 +219,4 @@ __pycache__
 docs/
 checkpoints/
 datasets/
+similars.txt
