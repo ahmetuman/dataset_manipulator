@@ -91,20 +91,6 @@ class app:
 
         print("\nCHECK README.md FOR ALL EXISTING FUNCTIONS AND THEIR EXPLANATIONS\n")
 
-        print("Analyze")
-        print(" -> Feature 1: Visualize")
-        print(" -> Feature 2: Validate")
-
-        print("-" * 50)
-
-        print("Alter")
-        print(" -> Feature 1: Edit")
-        print(" -> Feature 2: Merge")
-        print(" -> Feature 3: Remove")
-
-        print("-" * 50)
-
-
 def main(args=None):
     fire.Fire(app)
 

@@ -1,4 +1,4 @@
-# Dataset Manipulator
+# Dataset Manipulator - Featuring YOLO to COCO Conversion
 
 This project aims to create a roof package for dataset manipulate scripts. Every projects need their own unique way to manipulate (merge, remove/change labels etc.) their own datasets. I realized I wrote similar or same scripts for each project with small alterations. So, I decided to create one final package for varying scenarios. This project will be updated when I need new manipulation scenarios.
 
