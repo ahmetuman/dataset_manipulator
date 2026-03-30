@@ -24,8 +24,10 @@ class YoloDatasetVisualizer:
     KEY_QUIT_ESC = 27
     KEY_PREVIOUS = ord("p")
 
-    def __init__(self, dataset_directory):
+    def __init__(self, dataset_directory, detailed_mode):
         self.dataset_directory = dataset_directory
+        self.detailed_mode = detailed_mode
+
         self.class_names = self._load_class_names_from_yaml()
         self.splits = self._discover_available_splits()
 
@@ -191,7 +193,46 @@ class YoloDatasetVisualizer:
                 all_category_ids.add(annotation["category_id"])
         return sorted(all_category_ids)
 
-    def visualize_split(self, split_name, shuffle=True):
+    def _prompt_user_for_desired_category_ids(self, all_category_ids):
+        print("Available labels:")
+        for category_id in all_category_ids:
+            label_name = self._get_label_text_for_category(category_id)
+            print(f"  {category_id}: {label_name}")
+
+        user_input = input("\nEnter category IDs to display (comma-separated): ").strip()
+        selected_category_ids = set()
+        for token in user_input.split(","):
+            token = token.strip()
+            if token.isdigit() and int(token) in set(all_category_ids):
+                selected_category_ids.add(int(token))
+            elif token:
+                print(f"  Ignoring invalid category ID: '{token}'")
+
+        if not selected_category_ids:
+            print("No valid categories selected, showing all labels.")
+            return None
+
+        selected_names = [self._get_label_text_for_category(cid) for cid in sorted(selected_category_ids)]
+        print(f"Filtering to: {', '.join(selected_names)}")
+        return selected_category_ids
+
+    def _filter_annotations_by_category_ids(self, annotations, desired_category_ids):
+        if desired_category_ids is None:
+            return annotations
+        return [a for a in annotations if a["category_id"] in desired_category_ids]
+
+    def _filter_pairs_by_category_ids(self, image_label_pairs, labels_directory, desired_category_ids):
+        if desired_category_ids is None:
+            return image_label_pairs
+        filtered_pairs = []
+        for image_filename, label_filename in image_label_pairs:
+            label_path = os.path.join(labels_directory, label_filename)
+            annotations = self._parse_yolo_label_file(label_path)
+            if any(a["category_id"] in desired_category_ids for a in annotations):
+                filtered_pairs.append((image_filename, label_filename))
+        return filtered_pairs
+
+    def visualize_split(self, split_name, shuffle=True, desired_category_ids=None):
         matching_splits = [split for split in self.splits if split["name"] == split_name]
         if not matching_splits:
             print(f"Split '{split_name}' not found. Available: {[s['name'] for s in self.splits]}")
@@ -205,7 +246,16 @@ class YoloDatasetVisualizer:
         if shuffle:
             random.shuffle(image_label_pairs)
 
+        if desired_category_ids is not None:
+            image_label_pairs = self._filter_pairs_by_category_ids(
+                image_label_pairs, labels_directory, desired_category_ids
+            )
+
         total_image_count = len(image_label_pairs)
+        if total_image_count == 0:
+            print(f"\n[{split_name}] No images contain the selected labels.")
+            return
+
         all_category_ids = self._collect_all_category_ids_in_split(labels_directory, image_label_pairs)
 
         print(f"\n[{split_name}] {total_image_count} images")
@@ -224,7 +274,8 @@ class YoloDatasetVisualizer:
                 continue
 
             annotations = self._parse_yolo_label_file(label_path)
-            annotated_image = self._draw_bounding_boxes_on_image(image.copy(), annotations)
+            filtered_annotations = self._filter_annotations_by_category_ids(annotations, desired_category_ids)
+            annotated_image = self._draw_bounding_boxes_on_image(image.copy(), filtered_annotations)
 
             window_title = f"[{split_name}] [{current_index + 1}/{total_image_count}] {image_filename}"
             cv2.imshow(window_title, annotated_image)
@@ -239,12 +290,28 @@ class YoloDatasetVisualizer:
             else:
                 current_index += 1
 
+    def _collect_all_category_ids_across_splits(self):
+        all_category_ids = set()
+        for split in self.splits:
+            for category_id in self._collect_all_category_ids_in_split(
+                split["labels_directory"], split["image_label_pairs"]
+            ):
+                all_category_ids.add(category_id)
+        return sorted(all_category_ids)
+
     def visualize_all_splits(self, shuffle=True):
         if not self.splits:
             print("No valid splits found in the dataset.")
             return
 
         print(f"Found splits: {[split['name'] for split in self.splits]}")
+
+        desired_category_ids = None
+        if self.detailed_mode:
+            all_category_ids = self._collect_all_category_ids_across_splits()
+            self._print_color_legend(all_category_ids)
+            desired_category_ids = self._prompt_user_for_desired_category_ids(all_category_ids)
+
         for split in self.splits:
             print(f"\nLoading [{split['name']}] from: {split['images_directory']}")
-            self.visualize_split(split["name"], shuffle=shuffle)
+            self.visualize_split(split["name"], shuffle=shuffle, desired_category_ids=desired_category_ids)

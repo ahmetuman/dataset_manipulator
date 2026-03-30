@@ -76,4 +76,3 @@ This feature shows each label one by one. If you wish to alter the label's name 
 ### Compare
 
 [COMING SOON]: Compare how similar 2 datasets using **Analyze: Validate** metrics. 
-
