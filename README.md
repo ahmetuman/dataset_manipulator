@@ -46,6 +46,18 @@ RGB values for each label is given at terminal if needed.
 **Detailed Mode:**
 If detailed_mode flag is True, user may select labels to shown on the screen. Only selected labels and their annotations shown, images without selected labels are ignored.
 
+### Analyze: Visualize - Draw Graph
+
+This feature creates 4 different plot to gain insight on number of labels and bbox positions:
+
+1.
+
+2.
+
+3.
+
+4.
+
 ### Analyze: Validate
 
 Validation feature presents varying metrics for calculating quality of the dataset. Here are validation metrics we calculated and methodologies to increase quality:
@@ -54,7 +66,7 @@ Validation feature presents varying metrics for calculating quality of the datas
 
 For the first phase it finds exactly similar images. After that it checks for perceptual hash metrics to find similar images (not exactly same but it may spoil the training data) and deletes those similar images. If you wish to check and report it first run it with default function variables, just provide dataset/images path. When you believe it is OK to delete similarities you may add `False` flag for `test_run` variable.
 
-[COMING SOON]: # of labels (some visual representations for them maybe), other quality metrics (how far each image, is dataset varying, train-test split's similarities) etc
+[COMING SOON]: other quality metrics (how far each image, is dataset varying, train-test split's similarities) etc
 
 ### Alter: Merge
 
