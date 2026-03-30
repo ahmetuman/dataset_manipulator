@@ -4,7 +4,7 @@ import json
 import shutil
 from pathlib import Path
 
-import tabulate
+from tabulate import tabulate
 
 NO_ANNOTATIONS_FOLDER_NAME = "no_annotations"
 ANNOTATION_FILE_SUFFIX = "_annotations.coco.json"
@@ -59,12 +59,13 @@ class CocoLabelRemover:
         print(f"\nDataset: {self.dataset_root.name}")
         print(f"Splits:  {', '.join(self.split_dirs)}\n")
 
-        print(f"  {'ID':<6}{'Category Name':<30}{'Annotations':>12}")  # noqa E231
-        print("-" * 55)
+        rows = []
         for category_id in sorted(self.categories.keys()):
             name = self.categories[category_id]
             count = counts.get(category_id, 0)
-            print(f"  {category_id:<6}{name:<30}{count:>12}")
+            rows.append([category_id, name, count])
+
+        print(tabulate(rows, headers=["ID", "Category Name", "Annotations"], tablefmt="simple"))
 
     def _prompt_ids_to_remove(self) -> list[int]:
         raw_input = input("\nEnter category IDs to remove (comma-separated, e.g. 1,3,7): ").strip()

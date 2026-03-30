@@ -3,6 +3,8 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
+from tabulate import tabulate
+
 SUPPORTED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tiff"}
 NO_ANNOTATIONS_FOLDER_NAME = "no_annotations"
 
@@ -84,12 +86,13 @@ class YoloLabelRemover:
         print(f"\n  Dataset: {self.dataset_root.name}")
         print(f"  Splits:  {', '.join(self.split_dirs)}\n")
 
-        print(f"  {'ID':<6}{'Class Name':<30}{'Annotations':>12}")
-        print("-" * 55)
+        rows = []
         for class_id in sorted(self.class_names.keys()):
             name = self.class_names[class_id]
             count = counts.get(class_id, 0)
-            print(f"  {class_id:<6}{name:<30}{count:>12}")
+            rows.append([class_id, name, count])
+
+        print(tabulate(rows, headers=["ID", "Class Name", "Annotations"], tablefmt="simple"))
 
     def _prompt_ids_to_remove(self) -> list[int]:
         raw_input = input("\nEnter class IDs to remove (comma-separated, e.g. 1,3,7): ").strip()
