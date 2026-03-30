@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import os
 import shutil
@@ -36,7 +38,7 @@ class CocoDatasetMerger:
                 annotations_path = os.path.join(folder, split_name, ANNOTATIONS_FILENAME)
                 if not os.path.exists(annotations_path):
                     continue
-                with open(annotations_path, "r") as file:
+                with open(annotations_path) as file:
                     data = json.load(file)
                 for category in data["categories"]:
                     if PARENT_CATEGORY_PREFIX not in category["name"]:
@@ -65,7 +67,7 @@ class CocoDatasetMerger:
             if not os.path.exists(annotations_path):
                 continue
 
-            with open(annotations_path, "r") as file:
+            with open(annotations_path) as file:
                 data = json.load(file)
 
             dataset_name = os.path.basename(folder)
@@ -147,12 +149,12 @@ class CocoDatasetMerger:
             print("No datasets with COCO annotations found")
             sys.exit(1)
 
-        print(f"Found {len(self.dataset_folders)} datasets:")
+        print(f"Found {len(self.dataset_folders)} datasets: ")
         for folder in self.dataset_folders:
             print(f"  {os.path.basename(folder)}")
 
         self._build_unified_category_map()
-        print(f"\nUnified categories ({len(self.unified_category_map)}):")
+        print(f"\nUnified categories ({len(self.unified_category_map)}): ")
         for name, category_id in sorted(self.unified_category_map.items(), key=lambda item: item[1]):
             print(f"  {category_id}: {name}")
 

@@ -1,21 +1,23 @@
+from __future__ import annotations
+
 import os
 import sys
-from pathlib import Path
 from collections import Counter
+from pathlib import Path
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 class YOLOGraphDrawer:
-    def __init__(self, dataset_path, output_directory = "dataset_analysis"):
+    def __init__(self, dataset_path, output_directory="dataset_analysis"):
         self.dataset_path = Path(dataset_path)
         self.output_directory = Path(output_directory)
         self.output_directory.mkdir(parents=True, exist_ok=True)
 
     def _parse_label_file(self, filepath):
         annotations = []
-        with open(filepath, "r") as file:
+        with open(filepath) as file:
             for line in file:
                 parts = line.strip().split()
                 if len(parts) < 5:
@@ -46,7 +48,7 @@ class YOLOGraphDrawer:
         for yaml_path in yaml_candidates:
             try:
                 import yaml
-                with open(yaml_path, "r") as file:
+                with open(yaml_path) as file:
                     data = yaml.safe_load(file)
                 if "names" in data:
                     if isinstance(data["names"], dict):
@@ -99,7 +101,7 @@ class YOLOGraphDrawer:
             axis.text(
                 bar.get_x() + bar.get_width() / 2,
                 bar.get_height(),
-                f"{percentage:.1f}%",
+                f"{percentage: .1f}%",
                 ha="center",
                 va="bottom",
                 fontsize=8,
@@ -107,7 +109,7 @@ class YOLOGraphDrawer:
 
         axis.set_xticks(bar_positions)
         axis.set_xticklabels(labels, rotation=45, ha="right")
-        axis.set_title(f"Label Distribution (Total: {total:,} annotations)")
+        axis.set_title(f"Label Distribution (Total: {total: ,} annotations)")
         axis.set_xlabel("Class")
         axis.set_ylabel("Count")
         figure.tight_layout()
@@ -116,8 +118,8 @@ class YOLOGraphDrawer:
     def _create_bbox_area_histogram(self, areas):
         figure, axis = plt.subplots(figsize=(10, 5))
         axis.hist(areas, bins=50, color="#EF553B", edgecolor="white")
-        axis.set_title(f"Bounding Box Area Distribution (normalized w×h, n={len(areas):,})")
-        axis.set_xlabel("Bounding Box Area (width × height, normalized)")
+        axis.set_title(f"Bounding Box Area Distribution (normalized w x h, n={len(areas): ,})")
+        axis.set_xlabel("Bounding Box Area (width x height, normalized)")
         axis.set_ylabel("Frequency")
         figure.tight_layout()
         return figure
@@ -128,7 +130,7 @@ class YOLOGraphDrawer:
 
         figure, axis = plt.subplots(figsize=(10, 5))
         axis.hist(boxes_per_image, bins=bin_count, color="#00CC96", edgecolor="white")
-        axis.set_title(f"Boxes Per Image (n={len(boxes_per_image):,} images, avg={average_boxes:.1f})")
+        axis.set_title(f"Boxes Per Image (n={len(boxes_per_image): ,} images, avg={average_boxes: .1f})")
         axis.set_xlabel("Number of Boxes")
         axis.set_ylabel("Number of Images")
         figure.tight_layout()
@@ -163,7 +165,7 @@ class YOLOGraphDrawer:
             aspect="equal",
         )
         figure.colorbar(image, ax=axis, label="Box Count")
-        axis.set_title(f"Bounding Box Position Heatmap (n={len(all_annotations):,} boxes)")
+        axis.set_title(f"Bounding Box Position Heatmap (n={len(all_annotations): ,} boxes)")
         axis.set_xlabel("Image X (normalized)")
         axis.set_ylabel("Image Y (normalized)")
         figure.tight_layout()
@@ -189,7 +191,7 @@ class YOLOGraphDrawer:
             print("No annotations found. Check that your dataset has .txt label files.")
             sys.exit(1)
 
-        print(f"Found {len(all_annotations):,} annotations across {len(boxes_per_image):,} images.")
+        print(f"Found {len(all_annotations): ,} annotations across {len(boxes_per_image): ,} images.")
 
         class_counts = Counter(annotation["class_id"] for annotation in all_annotations)
         areas = [annotation["width"] * annotation["height"] for annotation in all_annotations]

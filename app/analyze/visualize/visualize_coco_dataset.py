@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import os
 import random
@@ -38,7 +40,7 @@ class CocoDatasetVisualizer:
         self.splits = self._discover_available_splits()
 
     def _load_coco_annotations(self, annotation_file_path):
-        with open(annotation_file_path, "r") as annotation_file:
+        with open(annotation_file_path) as annotation_file:
             coco_data = json.load(annotation_file)
         return coco_data
 
@@ -102,7 +104,7 @@ class CocoDatasetVisualizer:
 
     def _draw_bounding_boxes_on_image(self, image, annotations_for_image, category_id_to_name):
         for annotation in annotations_for_image:
-            bbox_x, bbox_y, bbox_width, bbox_height = [int(value) for value in annotation["bbox"]]
+            bbox_x, bbox_y, bbox_width, bbox_height = (int(value) for value in annotation["bbox"])
             category_id = annotation["category_id"]
             category_name = category_id_to_name.get(category_id, f"unknown_{category_id}")
             color = self._get_color_for_category(category_id)

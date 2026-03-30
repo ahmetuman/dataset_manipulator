@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 from pathlib import Path
 
@@ -32,7 +34,7 @@ class CocoLabelEditor:
 
     def _load_original_names(self) -> list[str]:
         first_file = self._annotation_files[0]
-        with open(first_file, "r") as file:
+        with open(first_file) as file:
             data = json.load(file)
 
         categories_sorted = sorted(data["categories"], key=lambda category: category["id"])
@@ -43,12 +45,15 @@ class CocoLabelEditor:
         total = len(self._original_names)
 
         for index, name in enumerate(self._original_names, start=1):
-            new_name = input("({}/{}) Current label: '{}' — Enter new name or press Enter to skip: ".format(index, total, name)).strip()
+            new_name = input(
+                f"({index}/{total}) Current label: '{name}' | "
+                "Enter new name or press Enter to skip: "
+            ).strip()
 
             if not new_name:
                 continue
 
-            confirmed = input("Are you sure: '{}' -> '{}'? (y/n): ".format(name, new_name)).strip().lower()
+            confirmed = input(f"Are you sure: '{name}' -> '{new_name}'? (y/n): ").strip().lower()
             if confirmed == "y":
                 rename_map[name] = new_name
                 print(f"  Registered: '{name}' -> '{new_name}'")
@@ -86,7 +91,7 @@ class CocoLabelEditor:
             self._remap_single_file(annotation_file, index_remap, merged_names)
 
     def _remap_single_file(self, file_path: Path, index_remap: dict[int, int], merged_names: list[str]):
-        with open(file_path, "r") as file:
+        with open(file_path) as file:
             data = json.load(file)
 
         old_id_to_old_index = {}

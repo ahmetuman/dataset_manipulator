@@ -1,4 +1,5 @@
-import os
+from __future__ import annotations
+
 import shutil
 from pathlib import Path
 
@@ -17,7 +18,7 @@ class YoloLabelRemover:
         class_names = {}
         inside_names_block = False
 
-        with open(yaml_path, "r") as file:
+        with open(yaml_path) as file:
             for line in file:
                 stripped = line.strip()
 
@@ -103,7 +104,7 @@ class YoloLabelRemover:
                 return []
             parsed_id = int(token)
             if parsed_id not in self.class_names:
-                print(f"[error] ID {parsed_id} does not exist in the dataset. Aborting.")
+                print(f"[error] ID {parsed_id} does not exist in the dataset. Aborting.")  # noqa E713
                 return []
             ids_to_remove.append(parsed_id)
         return ids_to_remove
@@ -249,6 +250,6 @@ class YoloLabelRemover:
         print("  Updating YAML config...")
         self._update_yaml_file(ids_to_remove)
 
-        print(f"\n  Done.")
+        print("\n  Done.")
         print(f"  Removed {len(ids_to_remove)} class(es).")
         print(f"  Moved {total_moved} image(s) with no remaining annotations to '{NO_ANNOTATIONS_FOLDER_NAME}/'.")

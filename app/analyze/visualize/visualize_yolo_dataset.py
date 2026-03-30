@@ -1,5 +1,7 @@
-import os
+from __future__ import annotations
+
 import ast
+import os
 import random
 
 import cv2
@@ -37,7 +39,7 @@ class YoloDatasetVisualizer:
             return {}
 
         class_names = {}
-        with open(yaml_path, "r") as yaml_file:
+        with open(yaml_path) as yaml_file:
             for line in yaml_file:
                 line = line.strip()
                 if not line.startswith("names:"):
@@ -105,7 +107,7 @@ class YoloDatasetVisualizer:
 
     def _parse_yolo_label_file(self, label_file_path):
         annotations = []
-        with open(label_file_path, "r") as label_file:
+        with open(label_file_path) as label_file:
             for line in label_file:
                 line = line.strip()
                 if not line:

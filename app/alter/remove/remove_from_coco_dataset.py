@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 import json
 import shutil
 from pathlib import Path
+
+import tabulate
 
 NO_ANNOTATIONS_FOLDER_NAME = "no_annotations"
 ANNOTATION_FILE_SUFFIX = "_annotations.coco.json"
@@ -28,7 +32,7 @@ class CocoLabelRemover:
 
     def _load_annotation_data(self, split: str) -> dict:
         annotation_file = self._find_annotation_file(self.dataset_root / split)
-        with open(annotation_file, "r") as file:
+        with open(annotation_file) as file:
             return json.load(file)
 
     def _save_annotation_data(self, split: str, data: dict):
@@ -55,7 +59,7 @@ class CocoLabelRemover:
         print(f"\nDataset: {self.dataset_root.name}")
         print(f"Splits:  {', '.join(self.split_dirs)}\n")
 
-        print(f"  {'ID':<6}{'Category Name':<30}{'Annotations':>12}")
+        print(f"  {'ID':<6}{'Category Name':<30}{'Annotations':>12}")  # noqa E231
         print("-" * 55)
         for category_id in sorted(self.categories.keys()):
             name = self.categories[category_id]
@@ -75,7 +79,7 @@ class CocoLabelRemover:
                 return []
             parsed_id = int(token)
             if parsed_id not in self.categories:
-                print(f"[error] ID {parsed_id} does not exist in the dataset. Aborting.")
+                print(f"[error] ID {parsed_id} does not exist in the dataset. Aborting.") # noqa E713
                 return []
             ids_to_remove.append(parsed_id)
         return ids_to_remove
@@ -103,7 +107,9 @@ class CocoLabelRemover:
         remaining_ids = sorted(set(self.categories.keys()) - set(ids_to_remove))
         return {old_id: new_id for new_id, old_id in enumerate(remaining_ids)}
 
-    def _build_remapped_categories(self, ids_to_remove: set[int], remapping: dict[int, int], original_categories: list[dict]) -> list[dict]:
+    def _build_remapped_categories(self, ids_to_remove: set[int],
+                                   remapping: dict[int, int],
+                                   original_categories: list[dict]) -> list[dict]:
         remapped_categories = []
         for category in original_categories:
             if category["id"] in ids_to_remove:
@@ -113,7 +119,9 @@ class CocoLabelRemover:
             remapped_categories.append(remapped_category)
         return remapped_categories
 
-    def _filter_and_remap_annotations(self, annotations: list[dict], ids_to_remove: set[int], remapping: dict[int, int]) -> tuple[list[dict], set[int]]:
+    def _filter_and_remap_annotations(self, annotations: list[dict],
+                                      ids_to_remove: set[int],
+                                      remapping: dict[int, int]) -> tuple[list[dict], set[int]]:
         kept_annotations = []
         annotated_image_ids = set()
         next_annotation_id = 1
@@ -196,6 +204,6 @@ class CocoLabelRemover:
             total_moved += moved
             print(f"    Moved {moved} unannotated image(s) to '{NO_ANNOTATIONS_FOLDER_NAME}/'.")
 
-        print(f"\n  Done.")
+        print("\n  Done.")
         print(f"  Removed {len(ids_to_remove)} category/categories.")
         print(f"  Moved {total_moved} total image(s) with no remaining annotations.")

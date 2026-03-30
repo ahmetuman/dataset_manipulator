@@ -66,11 +66,10 @@ This feature helps us to remove unwanted labels and move images that only contai
 
 ### Alter: Edit
 
-This feature shows each label one by one. If you wish to alter the label's name you can simply enter new name and approve it afterwards, or can skip with pressing `Enter`. At the end of editing if there are same labels code will group same labels under one (e.g. There won't be 1: Helmet, 3: Helmet, 4: Helmet classes they all will be under 1st ID) and will print old to new count of labels. 
+This feature shows each label one by one. If you wish to alter the label's name you can simply enter new name and approve it afterwards, or can skip with pressing `Enter`. At the end of editing if there are same labels code will group same labels under one (e.g. There won't be 1: Helmet, 3: Helmet, 4: Helmet classes they all will be under 1st ID) and will print old to new count of labels.
 
 ### Convert: YOLO to COCO Conversion
 
-This feature simply creates the same YOLO dataset in provided COCO format. 
+This feature simply creates the same YOLO dataset in provided COCO format.
 
 ```COCO to YOLO conversion already exist as both libraries and code snippets, so I may add it for later or won't add at all.```
-

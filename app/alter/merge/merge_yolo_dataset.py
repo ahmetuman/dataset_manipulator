@@ -1,5 +1,7 @@
-import os
+from __future__ import annotations
+
 import ast
+import os
 import shutil
 
 
@@ -75,7 +77,7 @@ class YoloDatasetMerger:
             return {}
 
         class_names = {}
-        with open(yaml_path, "r") as yaml_file:
+        with open(yaml_path) as yaml_file:
             for line in yaml_file:
                 line = line.strip()
                 if not line.startswith("names:"):
@@ -108,7 +110,7 @@ class YoloDatasetMerger:
                 # if UNWANTED_CLASS not in name:
                 #     all_class_names.add(name)
                 all_class_names.add(name)
-                
+
         return {name: index for index, name in enumerate(sorted(all_class_names))}
 
     def _build_class_id_remapping(self, class_names):
@@ -185,7 +187,7 @@ class YoloDatasetMerger:
         if image_path is None:
             return None
 
-        with open(label_path, "r") as label_file:
+        with open(label_path) as label_file:
             raw_lines = [line.strip() for line in label_file if line.strip()]
 
         remapped_lines = []

@@ -1,5 +1,9 @@
-import yaml
+from __future__ import annotations
+
 from pathlib import Path
+
+import yaml
+
 
 class YoloLabelEditor:
     def __init__(self, dataset_path: str):
@@ -25,7 +29,7 @@ class YoloLabelEditor:
         print(f"\nDone. {len(self._original_names)} labels -> {len(merged_names)} labels.")
 
     def _load_config(self) -> dict:
-        with open(self._config_path, "r") as file:
+        with open(self._config_path) as file:
             return yaml.safe_load(file)
 
     def _collect_renames(self) -> dict[str, str]:
@@ -33,12 +37,15 @@ class YoloLabelEditor:
         total = len(self._original_names)
 
         for index, name in enumerate(self._original_names, start=1):
-            new_name = input("({}/{}) Current label: '{}' — Enter new name or press Enter to skip: ".format(index, total, name)).strip()
+            new_name = input(
+                f"({index}/{total}) Current label: '{name}' | "
+                "Enter new name or press Enter to skip: "
+            ).strip()
 
             if not new_name:
                 continue
 
-            confirmed = input("Are you sure: '{}' -> '{}'? (y/n): ".format(name, new_name)).strip().lower()
+            confirmed = input(f"Are you sure: '{name}' -> '{new_name}'? (y/n): ").strip().lower()
             if confirmed == "y":
                 rename_map[name] = new_name
                 print(f"  Registered: '{name}' -> '{new_name}'")

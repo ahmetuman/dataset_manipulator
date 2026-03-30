@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import os
 import shutil
@@ -12,6 +14,7 @@ SUPPORTED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 EXPECTED_SPLITS = ["train", "valid", "test"]
 YOLO_DETECTION_FIELDS_COUNT = 5
 
+
 class YOLOtoCOCOConverter:
     def __init__(self, dataset_directory):
         self.dataset_directory = dataset_directory
@@ -22,7 +25,7 @@ class YOLOtoCOCOConverter:
             print(f"Error: data.yaml not found in {self.dataset_directory}")
             sys.exit(1)
 
-        with open(yaml_path, "r") as file:
+        with open(yaml_path) as file:
             config = yaml.safe_load(file)
 
         raw_names = config.get("names", {})
@@ -35,11 +38,9 @@ class YOLOtoCOCOConverter:
         print(f"Error: unexpected 'names' format in data.yaml: {type(raw_names)}")
         sys.exit(1)
 
-
     def _get_image_dimensions(self, image_path):
         with Image.open(image_path) as image:
             return image.width, image.height
-
 
     def _find_matching_image(self, directory, file_stem):
         for extension in SUPPORTED_IMAGE_EXTENSIONS:
@@ -47,7 +48,6 @@ class YOLOtoCOCOConverter:
             if os.path.exists(candidate_path):
                 return candidate_path
         return None
-
 
     def _parse_yolo_label_line(self, line, image_width, image_height):
         parts = line.strip().split()
@@ -78,7 +78,6 @@ class YOLOtoCOCOConverter:
             ],
             "area": round(box_width_pixels * box_height_pixels, 2),
         }
-
 
     def _convert_split(self, split_directory, class_names, output_directory):
         images_directory = os.path.join(split_directory, "images")
@@ -132,7 +131,7 @@ class YOLOtoCOCOConverter:
             })
 
             label_path = os.path.join(labels_directory, label_filename)
-            with open(label_path, "r") as file:
+            with open(label_path) as file:
                 for line in file:
                     if not line.strip():
                         continue
@@ -168,7 +167,6 @@ class YOLOtoCOCOConverter:
             "annotations": coco_annotations,
             "categories": categories,
         }
-
 
     def convert(self):
         output_root = self.dataset_directory + "_coco"
@@ -208,4 +206,3 @@ class YOLOtoCOCOConverter:
             sys.exit(1)
 
         print(f"\nDone. Converted {splits_converted} splits to: {output_root}")
-

@@ -1,15 +1,19 @@
+from __future__ import annotations
+
+import hashlib
 import os
 import sys
-import hashlib
-from PIL import Image
+
 import imagehash
+from PIL import Image
 
 
 VALID_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 PHASH_THRESHOLD = 5
 
+
 class SimilarityCalculator:
-    def __init__(self, root_directory, test_run, log_file = "similars.txt"):
+    def __init__(self, root_directory, test_run, log_file="similars.txt"):
         self.root_directory = root_directory
         self.test_run = test_run
         self.log_file = log_file
@@ -29,7 +33,6 @@ class SimilarityCalculator:
                     images.append(os.path.join(dirpath, filename))
         return sorted(images)
 
-
     def _compute_file_hash(self, filepath):
         hasher = hashlib.md5()
         with open(filepath, "rb") as file:
@@ -37,18 +40,15 @@ class SimilarityCalculator:
                 hasher.update(chunk)
         return hasher.hexdigest()
 
-
     def _compute_perceptual_hash(self, filepath):
         image = Image.open(filepath)
         return imagehash.phash(image)
-
 
     def _get_image_info(self, filepath):
         with Image.open(filepath) as image:
             width, height = image.size
         size_bytes = os.path.getsize(filepath)
         return width, height, size_bytes
-
 
     def _find_label_path(self, image_path):
         parent = os.path.dirname(image_path)
@@ -66,7 +66,6 @@ class SimilarityCalculator:
 
         return None
 
-
     def _pick_keeper_and_deletions(self, group):
         scored = []
         for filepath in group:
@@ -78,7 +77,6 @@ class SimilarityCalculator:
         keeper = scored[0][0]
         to_delete = [filepath for filepath, _, _ in scored[1:]]
         return keeper, to_delete
-
 
     def _remove_exact_duplicates(self, images, test_run):
         print(f"Phase 1: Checking for exact duplicates among {len(images)} images...")
@@ -106,19 +104,19 @@ class SimilarityCalculator:
         for group_index, (_, group) in enumerate(duplicate_groups.items(), start=1):
             keeper, files_to_delete = self._pick_keeper_and_deletions(group)
             keeper_width, keeper_height, keeper_size = self._get_image_info(keeper)
-            
+
             line = (
-                f"\n\nExact Group {group_index}:\n"
-                f"  Keeping: file://{os.path.join(self.root_directory, os.path.basename(keeper))}"
-            )            
+                f"\n\nExact Group {group_index}: \n"
+                f"  Keeping: file://{os.path.join(self.root_directory, os.path.basename(keeper))}"  # noqa E231
+            )
             self._log_group(line)
 
             for filepath in files_to_delete:
                 width, height, size_bytes = self._get_image_info(filepath)
                 action = "Would Delete:" if test_run else "Deleted:"
-                
-                line =(
-                    f"  {action} file://{os.path.join(self.root_directory, os.path.basename(filepath))}"
+
+                line = (
+                    f"  {action} file://{os.path.join(self.root_directory, os.path.basename(filepath))}"  # noqa E231
                 )
                 self._log_group(line)
 
@@ -134,17 +132,18 @@ class SimilarityCalculator:
 
         surviving_images = [path for path in images if path not in removed_paths]
 
-        print(f"  Exact duplicates: {deleted_images} images, {deleted_labels} labels {'would be ' if test_run else ''}removed")
+        print(f"  Exact duplicates: {deleted_images} images, {deleted_labels} labels"
+              f"{'would be ' if test_run else ''}removed")
+
         print(f"  {len(surviving_images)} images remain for perceptual comparison\n")
 
         if failed_files:
-            print(f"  {len(failed_files)} files could not be read:")
+            print(f"  {len(failed_files)} files could not be read: ")
             for path in failed_files:
                 print(f"    {path}")
             print()
 
         return surviving_images, deleted_images, deleted_labels
-
 
     def _find_perceptual_duplicate_groups(self, images, threshold):
         print(f"Phase 2: Computing perceptual hashes for {len(images)} images...")
@@ -164,7 +163,7 @@ class SimilarityCalculator:
                 failed_files.append(filepath)
 
         if failed_files:
-            print(f"  {len(failed_files)} files could not be processed:")
+            print(f"  {len(failed_files)} files could not be processed: ")
             for path in failed_files:
                 print(f"    {path}")
             print()
@@ -201,7 +200,6 @@ class SimilarityCalculator:
         groups = [members for members in group_map.values() if len(members) > 1]
         return groups
 
-
     def _delete_perceptual_duplicates(self, groups, test_run):
         total_deleted_images = 0
         total_deleted_labels = 0
@@ -209,22 +207,22 @@ class SimilarityCalculator:
         for group_index, group in enumerate(groups, start=1):
             keeper, files_to_delete = self._pick_keeper_and_deletions(group)
             keeper_width, keeper_height, keeper_size = self._get_image_info(keeper)
-            
+
             line = (
-                f"\n\nGroup {group_index}:\n"
-                f"  Keeping: file://{os.path.join(self.root_directory, os.path.basename(keeper))}"
-            )            
+                f"\n\nGroup {group_index}: \n"
+                f"  Keeping: file://{os.path.join(self.root_directory, os.path.basename(keeper))}" # noqa E231
+            )
             self._log_group(line)
 
             for filepath in files_to_delete:
                 width, height, size_bytes = self._get_image_info(filepath)
                 action = "Would Delete:" if test_run else "Deleting:"
-                
-                line =(
-                    f"  {action} file://{os.path.join(self.root_directory, os.path.basename(filepath))}"
+
+                line = (
+                    f"  {action} file://{os.path.join(self.root_directory, os.path.basename(filepath))}" # noqa E231
                 )
                 self._log_group(line)
-                
+
                 if not test_run:
                     os.remove(filepath)
                     total_deleted_images += 1
@@ -237,7 +235,6 @@ class SimilarityCalculator:
                     total_deleted_images += 1
 
         return total_deleted_images, total_deleted_labels
-
 
     def calculate_similarity(self):
         images = self._collect_images(self.root_directory)
@@ -258,11 +255,14 @@ class SimilarityCalculator:
 
         if not groups:
             print("\nNo perceptual duplicates found.")
-            print(f"\nTotal: {exact_deleted_images} images and {exact_deleted_labels} labels {'would be ' if self.test_run else ''}removed")
+            print(f"\nTotal: {exact_deleted_images} images and {exact_deleted_labels} labels"
+                  f"{'would be ' if self.test_run else ''}removed")
+
             sys.exit(0)
 
         perceptual_dupes = sum(len(group) - 1 for group in groups)
-        print(f"\nFound {len(groups)} perceptual duplicate groups, {perceptual_dupes} files to {'delete' if not self.test_run else 'flag'}\n")
+        print(f"\nFound {len(groups)} perceptual duplicate groups, {perceptual_dupes} files to " 
+              f"{'delete' if not self.test_run else 'flag'}\n")
 
         perceptual_deleted_images, perceptual_deleted_labels = self._delete_perceptual_duplicates(groups, self.test_run)
 
