@@ -19,7 +19,9 @@ from app.analyze.validate.validate_dataset import DatasetValidator
 
 from app.convert.convert_yolo_to_coco import YOLOtoCOCOConverter
 
-VERSION = "0.0.1"
+from app.analyze.visualize.draw_graphs.yolo_graphs import YOLOGraphDrawer
+
+VERSION = "0.0.2"
 
 class YOLO:
     def __init__(self):
@@ -29,6 +31,10 @@ class YOLO:
         yolo_dataset_visualizer = YoloDatasetVisualizer(dataset_directory_path, detailed_mode) 
         yolo_dataset_visualizer.visualize_all_splits()
 
+    def draw(self, dataset_directory_path):
+        yolo_grap_drawer = YOLOGraphDrawer(dataset_directory_path)
+        yolo_grap_drawer.draw()
+        
     def merge(self, datasets_root_directory, output_directory = "merged_dataset"):
         yolo_dataset_merger = YoloDatasetMerger(datasets_root_directory, output_directory)
         yolo_dataset_merger.merge()
