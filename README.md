@@ -43,7 +43,8 @@ This feature helps us to visualize our dataset's annotations. On the screen it s
 
 RGB values for each label is given at terminal if needed.
 
-[COMING SOON]: Show only given labels and ignore other ones.
+**Detailed Mode:**
+If detailed_mode flag is True, user may select labels to shown on the screen. Only selected labels and their annotations shown, images without selected labels are ignored.
 
 ### Analyze: Validate
 

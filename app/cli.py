@@ -49,8 +49,8 @@ class COCO:
     def __init__(self):
         pass
 
-    def visualize(self, dataset_directory_path):
-        coco_dataset_visualizer = CocoDatasetVisualizer(dataset_directory_path)
+    def visualize(self, dataset_directory_path, detailed_mode: bool = False):
+        coco_dataset_visualizer = CocoDatasetVisualizer(dataset_directory_path, detailed_mode)
         coco_dataset_visualizer.visualize_all_splits()
 
     def merge(self, datasets_root_directory, output_directory = "merged_dataset"):

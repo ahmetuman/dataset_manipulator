@@ -31,8 +31,10 @@ class CocoDatasetVisualizer:
         "instances.json",
     ]
 
-    def __init__(self, dataset_directory):
+    def __init__(self, dataset_directory, detailed_mode):
         self.dataset_directory = dataset_directory
+        self.detailed_mode = detailed_mode
+
         self.splits = self._discover_available_splits()
 
     def _load_coco_annotations(self, annotation_file_path):
@@ -140,7 +142,49 @@ class CocoDatasetVisualizer:
             print(f"  {category_name} (id: {category_id}) -> RGB({red}, {green}, {blue})")
         print()
 
-    def visualize_split(self, split_name, shuffle=True):
+    def _collect_all_category_ids_across_splits(self):
+        all_category_id_to_name = {}
+        for split in self.splits:
+            category_id_to_name = self._build_category_mapping(split["coco_data"])
+            all_category_id_to_name.update(category_id_to_name)
+        return all_category_id_to_name
+
+    def _prompt_user_for_desired_category_ids(self, category_id_to_name):
+        print("Available labels:")
+        for category_id in sorted(category_id_to_name.keys()):
+            print(f"  {category_id}: {category_id_to_name[category_id]}")
+
+        user_input = input("\nEnter category IDs to display (comma-separated): ").strip()
+        selected_category_ids = set()
+        for token in user_input.split(","):
+            token = token.strip()
+            if token.isdigit() and int(token) in category_id_to_name:
+                selected_category_ids.add(int(token))
+            elif token:
+                print(f"  Ignoring invalid category ID: '{token}'")
+
+        if not selected_category_ids:
+            print("No valid categories selected, showing all labels.")
+            return None
+
+        selected_names = [category_id_to_name[cid] for cid in sorted(selected_category_ids)]
+        print(f"Filtering to: {', '.join(selected_names)}")
+        return selected_category_ids
+
+    def _filter_annotations_by_category_ids(self, annotations, desired_category_ids):
+        if desired_category_ids is None:
+            return annotations
+        return [a for a in annotations if a["category_id"] in desired_category_ids]
+
+    def _filter_image_ids_by_category_ids(self, image_ids, annotations_by_image_id, desired_category_ids):
+        if desired_category_ids is None:
+            return image_ids
+        return [
+            image_id for image_id in image_ids
+            if any(a["category_id"] in desired_category_ids for a in annotations_by_image_id.get(image_id, []))
+        ]
+
+    def visualize_split(self, split_name, shuffle=True, desired_category_ids=None):
         matching_splits = [split for split in self.splits if split["name"] == split_name]
         if not matching_splits:
             print(f"Split '{split_name}' not found. Available: {[s['name'] for s in self.splits]}")
@@ -158,7 +202,15 @@ class CocoDatasetVisualizer:
         if shuffle:
             random.shuffle(image_ids)
 
+        if desired_category_ids is not None:
+            image_ids = self._filter_image_ids_by_category_ids(
+                image_ids, annotations_by_image_id, desired_category_ids
+            )
+
         total_image_count = len(image_ids)
+        if total_image_count == 0:
+            print(f"\n[{split_name}] No images contain the selected labels.")
+            return
 
         print(f"\n[{split_name}] {total_image_count} images")
         self._print_color_legend(category_id_to_name)
@@ -181,8 +233,11 @@ class CocoDatasetVisualizer:
                 continue
 
             annotations_for_current_image = annotations_by_image_id.get(current_image_id, [])
+            filtered_annotations = self._filter_annotations_by_category_ids(
+                annotations_for_current_image, desired_category_ids
+            )
             annotated_image = self._draw_bounding_boxes_on_image(
-                image.copy(), annotations_for_current_image, category_id_to_name
+                image.copy(), filtered_annotations, category_id_to_name
             )
 
             window_title = f"[{split_name}] [{current_index + 1}/{total_image_count}] {image_filename}"
@@ -204,6 +259,13 @@ class CocoDatasetVisualizer:
             return
 
         print(f"Found splits: {[split['name'] for split in self.splits]}")
+
+        desired_category_ids = None
+        if self.detailed_mode:
+            all_category_id_to_name = self._collect_all_category_ids_across_splits()
+            self._print_color_legend(all_category_id_to_name)
+            desired_category_ids = self._prompt_user_for_desired_category_ids(all_category_id_to_name)
+
         for split in self.splits:
             print(f"\nLoading [{split['name']}] from: {split['annotation_file_path']}")
-            self.visualize_split(split["name"], shuffle=shuffle)
+            self.visualize_split(split["name"], shuffle=shuffle, desired_category_ids=desired_category_ids)
