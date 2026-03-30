@@ -22,7 +22,7 @@ class YOLOtoCOCOConverter:
     def _load_class_names(self):
         yaml_path = os.path.join(self.dataset_directory, "data.yaml")
         if not os.path.exists(yaml_path):
-            print(f"Error: data.yaml not found in {self.dataset_directory}")
+            print(f"Error: data.yaml not found in {self.dataset_directory}")  # noqa E713
             sys.exit(1)
 
         with open(yaml_path) as file:

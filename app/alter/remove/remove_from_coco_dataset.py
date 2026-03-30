@@ -80,7 +80,7 @@ class CocoLabelRemover:
                 return []
             parsed_id = int(token)
             if parsed_id not in self.categories:
-                print(f"[error] ID {parsed_id} does not exist in the dataset. Aborting.") # noqa E713
+                print(f"[error] ID {parsed_id} does not exist in the dataset. Aborting.")  # noqa E713
                 return []
             ids_to_remove.append(parsed_id)
         return ids_to_remove

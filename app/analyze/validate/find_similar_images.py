@@ -210,7 +210,7 @@ class SimilarityCalculator:
 
             line = (
                 f"\n\nGroup {group_index}: \n"
-                f"  Keeping: file://{os.path.join(self.root_directory, os.path.basename(keeper))}" # noqa E231
+                f"  Keeping: file://{os.path.join(self.root_directory, os.path.basename(keeper))}"  # noqa E231
             )
             self._log_group(line)
 
@@ -219,7 +219,7 @@ class SimilarityCalculator:
                 action = "Would Delete:" if test_run else "Deleting:"
 
                 line = (
-                    f"  {action} file://{os.path.join(self.root_directory, os.path.basename(filepath))}" # noqa E231
+                    f"  {action} file://{os.path.join(self.root_directory, os.path.basename(filepath))}"  # noqa E231
                 )
                 self._log_group(line)
 
@@ -245,7 +245,9 @@ class SimilarityCalculator:
         if not images:
             sys.exit(0)
 
-        surviving_images, exact_deleted_images, exact_deleted_labels = self._remove_exact_duplicates(images, self.test_run)
+        surviving_images, exact_deleted_images, exact_deleted_labels = (
+            self._remove_exact_duplicates(images, self.test_run)
+        )
 
         if not surviving_images:
             print("No images left after exact dedup.")
@@ -261,7 +263,7 @@ class SimilarityCalculator:
             sys.exit(0)
 
         perceptual_dupes = sum(len(group) - 1 for group in groups)
-        print(f"\nFound {len(groups)} perceptual duplicate groups, {perceptual_dupes} files to " 
+        print(f"\nFound {len(groups)} perceptual duplicate groups, {perceptual_dupes} files to "
               f"{'delete' if not self.test_run else 'flag'}\n")
 
         perceptual_deleted_images, perceptual_deleted_labels = self._delete_perceptual_duplicates(groups, self.test_run)

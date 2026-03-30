@@ -39,11 +39,14 @@ repos:
     hooks:
       - id: check-json5
         exclude: models/.*
-  - repo: https://github.com/AdnanEkici/pre-commit-platform-safe-path-enforcer
-    rev: v0.0.2
-    hooks:
-        - id: pre-commit-platform-safe-path-enforcer
-          name: 'Check Path Separator'
-          entry: hooks/check_paths.py
-          language: script
-          types: [ python ]
+  # - repo: https://github.com/AdnanEkici/pre-commit-platform-safe-path-enforcer
+  #   rev: v0.0.2
+  #   hooks:
+  #       - id: pre-commit-platform-safe-path-enforcer
+  #         name: 'Check Path Separator'
+  #         entry: hooks/check_paths.py
+  #         language: script
+  #         types: [ python ]
+
+# Safe path enforcer detects nonpaths (\n or "'/'" etc) as possible file path.
+# It is commented out, manually checked the code for paths.

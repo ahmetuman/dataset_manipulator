@@ -84,7 +84,9 @@ class app:
     def help(self):
         print("\n--- HOW TO USE THIS APP ---\n")
 
-        print("$ app {dataset format (either YOLO or COCO or nothing)} {desired function} {parameters of function if needed} {input dataset(s) path}")
+        print("$ app {dataset format (either YOLO or COCO or nothing)} "
+              "{desired function} {parameters of function if needed} {input dataset(s) path}")
+
         print('e.g. $ app yolo visualize "datasets/colored_yolo_dataset"\n')
 
         print("\nCHECK README.md FOR ALL EXISTING FUNCTIONS AND THEIR EXPLANATIONS\n")
