@@ -50,13 +50,13 @@ If detailed_mode flag is True, user may select labels to shown on the screen. On
 
 This feature creates 4 different plot to gain insight on number of labels and bbox positions:
 
-1.
+1. Bounding Box Area Distrubition - Histogram
 
-2.
+2. Bounding Box Positions - Heatmap
 
-3.
+3. Bounding Boxes Per Image - Bar Graph
 
-4.
+4. Label Distrubition (Count and Percentage) - Bar Graph
 
 ### Analyze: Validate
 

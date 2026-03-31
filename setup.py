@@ -5,10 +5,11 @@ from setuptools import setup
 
 setup(
     name="dataset_manipulator",
-    version="0.0.1",
+    version="0.0.2",
+    # python_requires="=>3.11",
     packages=find_packages(),
     install_requires=[
-        "fire",
+
     ],
     entry_points={
         "console_scripts": [
