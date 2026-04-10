@@ -85,3 +85,10 @@ This feature shows each label one by one. If you wish to alter the label's name 
 This feature simply creates the same YOLO dataset in provided COCO format.
 
 ```COCO to YOLO conversion already exist as both libraries and code snippets, so I may add it for later or won't add at all.```
+
+
+## Future Direction 
+
+- Will expand the code for sound data too. Add the same/similar feature for it.
+
+- Easy dataset preparation (download, split, folder creation, file placement etc) for both image/sound data.
