@@ -1,2 +1,6 @@
 fire
 tabulate
+pyyaml
+imagehash
+matplotlib
+opencv-python
