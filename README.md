@@ -93,4 +93,4 @@ This feature simply creates the same YOLO dataset in provided COCO format.
 
 - Easy dataset preparation (download, split, folder creation, file placement etc) for both image/sound data.
 
-- Count number of labels
+- Count number of labels.
