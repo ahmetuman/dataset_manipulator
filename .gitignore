@@ -221,6 +221,7 @@ __pycache__
 docs/
 checkpoints/
 datasets/
+test_datasets/
 similars.txt
 other_scripts/
 dataset_analysis/

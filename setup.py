@@ -17,7 +17,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "app=app.cli:main",
+            "dsforge=app.cli:main",
         ],
     },
 )
