@@ -1,6 +1,6 @@
 # DSForge: Dataset Manipulator - Featuring YOLO to COCO Conversion
 
-**DSForge** aims to create a roof package for dataset manipulate scripts. Every projects need their own unique way to manipulate (merge, remove/change labels etc.) their own datasets. I realized I wrote similar or same scripts for each project with small alterations. So, I decided to create one final package for varying scenarios. 
+**DSForge** aims to create a roof package for dataset manipulate scripts. Every projects need their own unique way to manipulate (merge, remove/change labels etc.) their own datasets. I realized I wrote similar or same scripts for each project with small alterations. So, I decided to create one final package for varying scenarios. It is not a professional tool like Datumaro or FiftyOne; just a simple CLI tool that contains simple features. 
 
 **DSForge** will be updated when I need new manipulation scenarios.
 
@@ -106,7 +106,7 @@ For the first phase it finds exactly similar images. After that it checks for pe
 **Example Usage:**
 
 ```bash
-$ dsforge draw --dataset_directory_path "dataset_path" --test_run True
+$ dsforge validate --dataset_directory_path "dataset_path" --test_run True
 ```
 
 ### Alter: Merge
