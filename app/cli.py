@@ -10,6 +10,8 @@ from app.alter.merge.merge_coco_dataset import CocoDatasetMerger
 from app.alter.merge.merge_yolo_dataset import YoloDatasetMerger
 from app.alter.remove.remove_from_coco_dataset import CocoLabelRemover
 from app.alter.remove.remove_from_yolo_dataset import YoloLabelRemover
+from app.analyze.distribution.analyze_coco_distribution import CocoDistributionAnalyzer
+from app.analyze.distribution.analyze_yolo_distribution import YoloDistributionAnalyzer
 from app.analyze.validate.validate_dataset import DatasetValidator
 from app.analyze.visualize.draw_graphs.yolo_graphs import YOLOGraphDrawer
 from app.analyze.visualize.visualize_coco_dataset import CocoDatasetVisualizer
@@ -30,6 +32,10 @@ class YOLO:
     def draw(self, dataset_directory_path):
         yolo_grap_drawer = YOLOGraphDrawer(dataset_directory_path)
         yolo_grap_drawer.draw()
+
+    def distribution(self, dataset_directory_path):
+        yolo_distribution_analyzer = YoloDistributionAnalyzer(dataset_directory_path)
+        yolo_distribution_analyzer.analyze()
 
     def merge(self, datasets_root_directory, output_directory="merged_dataset"):
         yolo_dataset_merger = YoloDatasetMerger(datasets_root_directory, output_directory)
@@ -55,6 +61,10 @@ class COCO:
     def visualize(self, dataset_directory_path, detailed_mode: bool = False):
         coco_dataset_visualizer = CocoDatasetVisualizer(dataset_directory_path, detailed_mode)
         coco_dataset_visualizer.visualize_all_splits()
+
+    def distribution(self, dataset_directory_path):
+        coco_distribution_analyzer = CocoDistributionAnalyzer(dataset_directory_path)
+        coco_distribution_analyzer.analyze()
 
     def merge(self, datasets_root_directory, output_directory="merged_dataset"):
         yolo_dataset_merger = CocoDatasetMerger(datasets_root_directory, output_directory)

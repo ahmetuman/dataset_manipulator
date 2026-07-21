@@ -95,6 +95,16 @@ This feature creates 4 different plot to gain insight on number of labels and bb
 $ dsforge yolo draw --dataset_directory_path "dataset_path"
 ```
 
+### Analyze: Distribution
+
+This feature reports a detailed label distribution for each split. It prints a per-class annotation matrix (count and in-split percentage for `train`, `valid`, `test` plus a total column) and a per-split summary (images, annotations, average annotations per image, number of classes). It also saves a per-split label distribution bar chart into the `distribution_analysis/` folder.
+
+**Example Usage:**
+
+```bash
+$ dsforge yolo distribution --dataset_directory_path "dataset_path"
+```
+
 ### Analyze: Validate
 
 Validation feature presents varying metrics for calculating quality of the dataset. Here are validation metrics we calculated and methodologies to increase quality:
@@ -159,6 +169,8 @@ This feature simply creates the same YOLO dataset in provided COCO format.
 
 - Draw
 
+- Distribution
+
 - Merge
 
 - Remove
@@ -171,6 +183,8 @@ This feature simply creates the same YOLO dataset in provided COCO format.
 
 - Visualize
 
+- Distribution
+
 - Merge
 
 - Remove
@@ -178,8 +192,6 @@ This feature simply creates the same YOLO dataset in provided COCO format.
 - Edit
 
 ## Future Direction
-
-- Detailed label distrubiton analysis for each split
 
 - Include features and add support for segmentation datasets too
 
