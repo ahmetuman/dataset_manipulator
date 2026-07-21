@@ -10,6 +10,8 @@ from app.alter.merge.merge_coco_dataset import CocoDatasetMerger
 from app.alter.merge.merge_yolo_dataset import YoloDatasetMerger
 from app.alter.remove.remove_from_coco_dataset import CocoLabelRemover
 from app.alter.remove.remove_from_yolo_dataset import YoloLabelRemover
+from app.alter.sanitize.sanitize_coco_dataset import CocoDatasetSanitizer
+from app.alter.sanitize.sanitize_yolo_dataset import YoloDatasetSanitizer
 from app.analyze.distribution.analyze_coco_distribution import CocoDistributionAnalyzer
 from app.analyze.distribution.analyze_yolo_distribution import YoloDistributionAnalyzer
 from app.analyze.doctor.doctor_coco_dataset import CocoDatasetDoctor
@@ -55,6 +57,10 @@ class YOLO:
         yolo_label_editor = YoloLabelEditor(dataset_directory_path)
         yolo_label_editor.edit()
 
+    def sanitize(self, dataset_directory_path, test_run: bool = True):
+        yolo_dataset_sanitizer = YoloDatasetSanitizer(dataset_directory_path, test_run)
+        yolo_dataset_sanitizer.sanitize()
+
     def convert(self, dataset_directory_path):
         yolo_to_coco_converter = YOLOtoCOCOConverter(dataset_directory_path)
         yolo_to_coco_converter.convert()
@@ -87,6 +93,10 @@ class COCO:
     def edit(self, dataset_directory_path):
         coco_label_editor = CocoLabelEditor(dataset_directory_path)
         coco_label_editor.edit()
+
+    def sanitize(self, dataset_directory_path, test_run: bool = True):
+        coco_dataset_sanitizer = CocoDatasetSanitizer(dataset_directory_path, test_run)
+        coco_dataset_sanitizer.sanitize()
 
 
 class app:

@@ -165,6 +165,22 @@ This feature shows each label one by one. If you wish to alter the label's name 
 $ dsforge yolo edit --dataset_directory_path "dataset_path"
 ```
 
+### Alter: Sanitize
+
+This feature auto-fixes the integrity problems reported by the Doctor. Like the validate feature it defaults to a dry run (`test_run True`) that only reports what would change; pass `test_run False` to write the fixes in place.
+
+For YOLO it removes malformed lines, drops unknown-class and zero-area/degenerate boxes, clamps out-of-range boxes back into `[0, 1]`, and removes duplicate boxes within a file. For COCO it removes duplicate image entries, drops annotations with broken `image_id`/`category_id` references, clamps bounding boxes to image bounds (recomputing `area`), drops degenerate and duplicate boxes, and reassigns annotation IDs when duplicates are found.
+
+**Example Usage:**
+
+```bash
+# report only (default)
+$ dsforge yolo sanitize --dataset_directory_path "dataset_path"
+
+# apply the fixes
+$ dsforge yolo sanitize --dataset_directory_path "dataset_path" --test_run False
+```
+
 ### Convert: YOLO to COCO Conversion
 
 This feature simply creates the same YOLO dataset in provided COCO format.
@@ -193,6 +209,8 @@ This feature simply creates the same YOLO dataset in provided COCO format.
 
 - Edit
 
+- Sanitize
+
 - **Convert** (to COCO)
 
 ### COCO
@@ -208,6 +226,8 @@ This feature simply creates the same YOLO dataset in provided COCO format.
 - Remove
 
 - Edit
+
+- Sanitize
 
 ## Future Direction
 
