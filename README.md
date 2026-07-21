@@ -105,6 +105,20 @@ This feature reports a detailed label distribution for each split. It prints a p
 $ dsforge yolo distribution --dataset_directory_path "dataset_path"
 ```
 
+### Analyze: Doctor
+
+This feature runs a read-only health check over the dataset and prints a per-check issue report plus a summary table. It flags common integrity problems so you can fix them before training.
+
+For YOLO it checks: `data.yaml` presence and `nc`/names consistency, missing `images/` or `labels/` directories, orphan images (no label) and orphan labels (no image), empty label files, corrupt/unreadable images, malformed annotation lines (wrong field count, non-numeric values, out-of-range or zero-size boxes, unknown class IDs), duplicate image names across splits, and declared-but-unused classes.
+
+For COCO it checks: annotation file presence and parseability, category consistency across splits, listed images missing on disk, images on disk not referenced in annotations, broken annotation references (missing `image_id`/`category_id`), invalid bounding boxes (non-positive size, negative origin, out of image bounds), duplicate image/annotation IDs, duplicate image names across splits, unused categories, and corrupt/unreadable images.
+
+**Example Usage:**
+
+```bash
+$ dsforge yolo doctor --dataset_directory_path "dataset_path"
+```
+
 ### Analyze: Validate
 
 Validation feature presents varying metrics for calculating quality of the dataset. Here are validation metrics we calculated and methodologies to increase quality:
@@ -171,6 +185,8 @@ This feature simply creates the same YOLO dataset in provided COCO format.
 
 - Distribution
 
+- Doctor
+
 - Merge
 
 - Remove
@@ -184,6 +200,8 @@ This feature simply creates the same YOLO dataset in provided COCO format.
 - Visualize
 
 - Distribution
+
+- Doctor
 
 - Merge
 
