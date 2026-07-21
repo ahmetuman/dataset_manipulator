@@ -1,32 +1,32 @@
 from __future__ import annotations
 
-import json
-import os
 import shutil
 import sys
+from pathlib import Path
+
+from app.utils.coco_files import ANNOTATIONS_FILENAME
+from app.utils.coco_files import load_coco
+from app.utils.coco_files import save_coco
 
 SPLIT_NAMES = ["train", "valid", "test"]
-ANNOTATIONS_FILENAME = "_annotations.coco.json"
 PARENT_CATEGORY_PREFIX = "Parent"
 
 
 class CocoDatasetMerger:
     def __init__(self, datasets_root_directory, output_directory):
-        self.root_directory = datasets_root_directory
-        self.output_directory = output_directory
+        self.datasets_root_directory = Path(datasets_root_directory)
+        self.output_directory = Path(output_directory)
         self.dataset_folders = []
         self.unified_category_map = {}
 
-    def _find_dataset_folders(self):
+    def _find_dataset_folders(self) -> list[Path]:
         folders = []
-        for entry in sorted(os.listdir(self.root_directory)):
-            entry_path = os.path.join(self.root_directory, entry)
-            if not os.path.isdir(entry_path):
+        for entry in sorted(self.datasets_root_directory.iterdir()):
+            if not entry.is_dir():
                 continue
             for split_name in SPLIT_NAMES:
-                annotations_path = os.path.join(entry_path, split_name, ANNOTATIONS_FILENAME)
-                if os.path.exists(annotations_path):
-                    folders.append(entry_path)
+                if (entry / split_name / ANNOTATIONS_FILENAME).exists():
+                    folders.append(entry)
                     break
         self.dataset_folders = folders
         return folders
@@ -35,11 +35,10 @@ class CocoDatasetMerger:
         all_category_names = set()
         for folder in self.dataset_folders:
             for split_name in SPLIT_NAMES:
-                annotations_path = os.path.join(folder, split_name, ANNOTATIONS_FILENAME)
-                if not os.path.exists(annotations_path):
+                annotations_path = folder / split_name / ANNOTATIONS_FILENAME
+                if not annotations_path.exists():
                     continue
-                with open(annotations_path) as file:
-                    data = json.load(file)
+                data = load_coco(annotations_path)
                 for category in data["categories"]:
                     if PARENT_CATEGORY_PREFIX not in category["name"]:
                         all_category_names.add(category["name"])
@@ -51,8 +50,8 @@ class CocoDatasetMerger:
         return self.unified_category_map
 
     def _merge_split(self, split_name):
-        split_output_directory = os.path.join(self.output_directory, split_name)
-        os.makedirs(split_output_directory, exist_ok=True)
+        split_output_directory = self.output_directory / split_name
+        split_output_directory.mkdir(parents=True, exist_ok=True)
 
         merged_images = []
         merged_annotations = []
@@ -62,15 +61,13 @@ class CocoDatasetMerger:
         skipped_parent_annotations = 0
 
         for folder in self.dataset_folders:
-            split_directory = os.path.join(folder, split_name)
-            annotations_path = os.path.join(split_directory, ANNOTATIONS_FILENAME)
-            if not os.path.exists(annotations_path):
+            split_directory = folder / split_name
+            annotations_path = split_directory / ANNOTATIONS_FILENAME
+            if not annotations_path.exists():
                 continue
 
-            with open(annotations_path) as file:
-                data = json.load(file)
-
-            dataset_name = os.path.basename(folder)
+            data = load_coco(annotations_path)
+            dataset_name = folder.name
 
             old_id_to_unified_category_id = {}
             parent_category_ids = set()
@@ -87,13 +84,13 @@ class CocoDatasetMerger:
                 image_id_counter += 1
                 old_to_new_image_id[old_image_id] = new_image_id
 
-                file_extension = os.path.splitext(image["file_name"])[1]
+                file_extension = Path(image["file_name"]).suffix
                 new_filename = f"{dataset_name}_{split_name}_{new_image_id}{file_extension}"
 
-                source_path = os.path.join(split_directory, image["file_name"])
-                destination_path = os.path.join(split_output_directory, new_filename)
+                source_path = split_directory / image["file_name"]
+                destination_path = split_output_directory / new_filename
 
-                if os.path.exists(source_path):
+                if source_path.exists():
                     shutil.copy2(source_path, destination_path)
                     total_files_copied += 1
 
@@ -137,9 +134,7 @@ class CocoDatasetMerger:
             "categories": category_list,
         }
 
-        output_path = os.path.join(split_output_directory, ANNOTATIONS_FILENAME)
-        with open(output_path, "w") as file:
-            json.dump(coco_output, file, indent=2)
+        save_coco(split_output_directory / ANNOTATIONS_FILENAME, coco_output)
 
         return coco_output, total_files_copied, skipped_parent_annotations
 
@@ -151,7 +146,7 @@ class CocoDatasetMerger:
 
         print(f"Found {len(self.dataset_folders)} datasets: ")
         for folder in self.dataset_folders:
-            print(f"  {os.path.basename(folder)}")
+            print(f"  {folder.name}")
 
         self._build_unified_category_map()
         print(f"\nUnified categories ({len(self.unified_category_map)}): ")
@@ -172,8 +167,3 @@ class CocoDatasetMerger:
             )
 
         print(f"\nMerged dataset saved to: {self.output_directory}")
-
-
-if __name__ == "__main__":
-    merger = CocoDatasetMerger(root_directory=sys.argv[1], output_directory=sys.argv[2])
-    merger.merge()

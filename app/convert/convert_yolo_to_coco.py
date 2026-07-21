@@ -1,39 +1,35 @@
 from __future__ import annotations
 
-import json
-import os
 import shutil
 import sys
 from pathlib import Path
 
-import yaml
 from PIL import Image
 
+from app.utils.coco_files import ANNOTATIONS_FILENAME
+from app.utils.coco_files import save_coco
+from app.utils.image_files import find_matching_image
+from app.utils.yaml_config import load_yaml_config
+from app.utils.yaml_config import normalize_class_names
 
-SUPPORTED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+
 EXPECTED_SPLITS = ["train", "valid", "test"]
 YOLO_DETECTION_FIELDS_COUNT = 5
 
 
 class YOLOtoCOCOConverter:
     def __init__(self, dataset_directory):
-        self.dataset_directory = dataset_directory
+        self.dataset_directory = Path(dataset_directory)
 
     def _load_class_names(self):
-        yaml_path = os.path.join(self.dataset_directory, "data.yaml")
-        if not os.path.exists(yaml_path):
-            print(f"Error: data.yaml not found in {self.dataset_directory}")  # noqa E713
+        yaml_path = self.dataset_directory / "data.yaml"
+        if not yaml_path.exists():
+            print(f"Error: data.yaml not found in {self.dataset_directory}")
             sys.exit(1)
 
-        with open(yaml_path) as file:
-            config = yaml.safe_load(file)
-
-        raw_names = config.get("names", {})
-
-        if isinstance(raw_names, list):
-            return {index: name for index, name in enumerate(raw_names)}
-        if isinstance(raw_names, dict):
-            return {int(key): value for key, value in raw_names.items()}
+        raw_names = load_yaml_config(yaml_path).get("names", {})
+        if isinstance(raw_names, (list, dict)):
+            return normalize_class_names(raw_names)
 
         print(f"Error: unexpected 'names' format in data.yaml: {type(raw_names)}")
         sys.exit(1)
@@ -42,19 +38,9 @@ class YOLOtoCOCOConverter:
         with Image.open(image_path) as image:
             return image.width, image.height
 
-    def _find_matching_image(self, directory, file_stem):
-        for extension in SUPPORTED_IMAGE_EXTENSIONS:
-            candidate_path = os.path.join(directory, file_stem + extension)
-            if os.path.exists(candidate_path):
-                return candidate_path
-        return None
-
     def _parse_yolo_label_line(self, line, image_width, image_height):
         parts = line.strip().split()
-        if len(parts) < YOLO_DETECTION_FIELDS_COUNT:
-            return None
-
-        if len(parts) > YOLO_DETECTION_FIELDS_COUNT:
+        if len(parts) != YOLO_DETECTION_FIELDS_COUNT:
             return None
 
         class_id = int(parts[0])
@@ -79,25 +65,20 @@ class YOLOtoCOCOConverter:
             "area": round(box_width_pixels * box_height_pixels, 2),
         }
 
-    def _convert_split(self, split_directory, class_names, output_directory):
-        images_directory = os.path.join(split_directory, "images")
-        labels_directory = os.path.join(split_directory, "labels")
+    def _convert_split(self, split_directory: Path, class_names, output_directory: Path):
+        images_directory = split_directory / "images"
+        labels_directory = split_directory / "labels"
 
-        if not os.path.isdir(images_directory) or not os.path.isdir(labels_directory):
+        if not images_directory.is_dir() or not labels_directory.is_dir():
             print(f"  Skipping: missing images/ or labels/ in {split_directory}")
             return None
 
-        label_files = sorted(
-            filename
-            for filename in os.listdir(labels_directory)
-            if filename.endswith(".txt")
-        )
-
+        label_files = sorted(labels_directory.glob("*.txt"))
         if not label_files:
             print(f"  No label files found in {labels_directory}")
             return None
 
-        os.makedirs(output_directory, exist_ok=True)
+        output_directory.mkdir(parents=True, exist_ok=True)
 
         coco_images = []
         coco_annotations = []
@@ -107,9 +88,8 @@ class YOLOtoCOCOConverter:
         skipped_no_image = 0
         skipped_lines = 0
 
-        for label_filename in label_files:
-            file_stem = Path(label_filename).stem
-            source_image_path = self._find_matching_image(images_directory, file_stem)
+        for label_file in label_files:
+            source_image_path = find_matching_image(images_directory, label_file.stem)
 
             if source_image_path is None:
                 skipped_no_image += 1
@@ -117,10 +97,10 @@ class YOLOtoCOCOConverter:
 
             image_id += 1
             image_width, image_height = self._get_image_dimensions(source_image_path)
-            image_filename = os.path.basename(source_image_path)
+            image_filename = source_image_path.name
 
-            destination_image_path = os.path.join(output_directory, image_filename)
-            if not os.path.exists(destination_image_path):
+            destination_image_path = output_directory / image_filename
+            if not destination_image_path.exists():
                 shutil.copy2(source_image_path, destination_image_path)
 
             coco_images.append({
@@ -130,27 +110,25 @@ class YOLOtoCOCOConverter:
                 "height": image_height,
             })
 
-            label_path = os.path.join(labels_directory, label_filename)
-            with open(label_path) as file:
-                for line in file:
-                    if not line.strip():
-                        continue
+            for line in label_file.read_text().splitlines():
+                if not line.strip():
+                    continue
 
-                    parsed = self._parse_yolo_label_line(line, image_width, image_height)
-                    if parsed is None:
-                        skipped_lines += 1
-                        continue
+                parsed = self._parse_yolo_label_line(line, image_width, image_height)
+                if parsed is None:
+                    skipped_lines += 1
+                    continue
 
-                    used_class_ids.add(parsed["class_id"])
-                    coco_annotations.append({
-                        "id": annotation_id,
-                        "image_id": image_id,
-                        "category_id": parsed["class_id"],
-                        "bbox": parsed["bbox"],
-                        "area": parsed["area"],
-                        "iscrowd": 0,
-                    })
-                    annotation_id += 1
+                used_class_ids.add(parsed["class_id"])
+                coco_annotations.append({
+                    "id": annotation_id,
+                    "image_id": image_id,
+                    "category_id": parsed["class_id"],
+                    "bbox": parsed["bbox"],
+                    "area": parsed["area"],
+                    "iscrowd": 0,
+                })
+                annotation_id += 1
 
         if skipped_no_image:
             print(f"  Warning: {skipped_no_image} label files had no matching image")
@@ -169,7 +147,7 @@ class YOLOtoCOCOConverter:
         }
 
     def convert(self):
-        output_root = self.dataset_directory + "_coco"
+        output_root = self.dataset_directory.parent / (self.dataset_directory.name + "_coco")
 
         class_names = self._load_class_names()
         print(f"Loaded {len(class_names)} classes from data.yaml")
@@ -177,11 +155,11 @@ class YOLOtoCOCOConverter:
         splits_converted = 0
 
         for split_name in EXPECTED_SPLITS:
-            split_input_directory = os.path.join(self.dataset_directory, split_name)
-            if not os.path.exists(split_input_directory):
+            split_input_directory = self.dataset_directory / split_name
+            if not split_input_directory.exists():
                 continue
 
-            split_output_directory = os.path.join(output_root, split_name)
+            split_output_directory = output_root / split_name
             print(f"Processing: {split_name}")
 
             coco_data = self._convert_split(
@@ -191,9 +169,8 @@ class YOLOtoCOCOConverter:
             if coco_data is None:
                 continue
 
-            annotations_path = os.path.join(split_output_directory, "_annotations.coco.json")
-            with open(annotations_path, "w") as file:
-                json.dump(coco_data, file, indent=2)
+            annotations_path = split_output_directory / ANNOTATIONS_FILENAME
+            save_coco(annotations_path, coco_data)
 
             print(f"  Images: {len(coco_data['images'])}")
             print(f"  Annotations: {len(coco_data['annotations'])}")

@@ -5,7 +5,10 @@ from pathlib import Path
 
 from tabulate import tabulate
 
-SUPPORTED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tiff"}
+from app.utils.image_files import find_matching_image
+from app.utils.yaml_config import find_yaml_file
+from app.utils.yaml_config import load_class_names
+
 NO_ANNOTATIONS_FOLDER_NAME = "no_annotations"
 
 
@@ -17,44 +20,16 @@ class YoloLabelRemover:
 
     def _load_class_names(self) -> dict[int, str]:
         yaml_path = self._find_yaml_file()
-        class_names = {}
-        inside_names_block = False
-
-        with open(yaml_path) as file:
-            for line in file:
-                stripped = line.strip()
-
-                if stripped.startswith("names:"):
-                    remainder = stripped[len("names:"):].strip()
-                    if remainder.startswith("["):
-                        items = remainder.strip("[]").split(",")
-                        return {i: item.strip().strip("'\"") for i, item in enumerate(items)}
-                    inside_names_block = True
-                    continue
-
-                if inside_names_block:
-                    if not stripped or (not stripped[0].isdigit() and stripped[0] != "-"):
-                        break
-                    if stripped.startswith("-"):
-                        index = len(class_names)
-                        name = stripped.lstrip("- ").strip("'\"")
-                    else:
-                        parts = stripped.split(":", 1)
-                        index = int(parts[0].strip())
-                        name = parts[1].strip().strip("'\"")
-                    class_names[index] = name
-
+        class_names = load_class_names(yaml_path)
         if not class_names:
             raise ValueError(f"Could not parse class names from {yaml_path}")
         return class_names
 
     def _find_yaml_file(self) -> Path:
-        yaml_candidates = list(self.dataset_root.glob("*.yaml")) + list(self.dataset_root.glob("*.yml"))
-        if not yaml_candidates:
+        yaml_path = find_yaml_file(self.dataset_root)
+        if yaml_path is None:
             raise FileNotFoundError(f"No YAML file found in {self.dataset_root}")
-        if len(yaml_candidates) > 1:
-            print(f"[warning] Multiple YAML files found, using: {yaml_candidates[0].name}")
-        return yaml_candidates[0]
+        return yaml_path
 
     def _discover_splits(self) -> list[str]:
         found_splits = []
@@ -177,14 +152,11 @@ class YoloLabelRemover:
             images_dir = self.dataset_root / split / "images"
 
             for label_file in empty_label_files:
-                stem = label_file.stem
                 shutil.move(str(label_file), str(no_ann_labels_dir / label_file.name))
 
-                for extension in SUPPORTED_IMAGE_EXTENSIONS:
-                    image_path = images_dir / (stem + extension)
-                    if image_path.exists():
-                        shutil.move(str(image_path), str(no_ann_images_dir / image_path.name))
-                        break
+                image_path = find_matching_image(images_dir, label_file.stem)
+                if image_path is not None:
+                    shutil.move(str(image_path), str(no_ann_images_dir / image_path.name))
 
                 total_moved += 1
 

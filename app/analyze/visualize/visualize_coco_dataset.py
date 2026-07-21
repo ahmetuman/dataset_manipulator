@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-import json
-import os
 import random
 from collections import defaultdict
+from pathlib import Path
 
 import cv2
 
+from app.utils.coco_files import load_coco
+
 
 class CocoDatasetVisualizer:
-    SUPPORTED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
-
     CATEGORY_COLORS = [
         (0, 255, 0), (255, 0, 0), (0, 0, 255), (255, 255, 0),
         (255, 0, 255), (0, 255, 255), (128, 255, 0), (255, 128, 0),
@@ -34,15 +33,13 @@ class CocoDatasetVisualizer:
     ]
 
     def __init__(self, dataset_directory, detailed_mode):
-        self.dataset_directory = dataset_directory
+        self.dataset_directory = Path(dataset_directory)
         self.detailed_mode = detailed_mode
 
         self.splits = self._discover_available_splits()
 
     def _load_coco_annotations(self, annotation_file_path):
-        with open(annotation_file_path) as annotation_file:
-            coco_data = json.load(annotation_file)
-        return coco_data
+        return load_coco(annotation_file_path)
 
     def _build_category_mapping(self, coco_data):
         category_id_to_name = {}
@@ -62,26 +59,23 @@ class CocoDatasetVisualizer:
             annotations_by_image_id[annotation["image_id"]].append(annotation)
         return annotations_by_image_id
 
-    def _find_annotation_file(self, split_folder_path):
-        json_files = [
-            filename for filename in os.listdir(split_folder_path)
-            if filename.endswith(".json")
-        ]
+    def _find_annotation_file(self, split_folder_path: Path) -> Path | None:
+        json_files = sorted(path for path in split_folder_path.iterdir() if path.suffix == ".json")
         if len(json_files) == 1:
-            return os.path.join(split_folder_path, json_files[0])
+            return json_files[0]
         for candidate_name in self.CANDIDATE_ANNOTATION_FILENAMES:
-            candidate_path = os.path.join(split_folder_path, candidate_name)
-            if os.path.exists(candidate_path):
+            candidate_path = split_folder_path / candidate_name
+            if candidate_path.exists():
                 return candidate_path
         if json_files:
-            return os.path.join(split_folder_path, json_files[0])
+            return json_files[0]
         return None
 
     def _discover_available_splits(self):
         available_splits = []
         for split_name in ["train", "test", "valid", "data"]:
-            split_path = os.path.join(self.dataset_directory, split_name)
-            if not os.path.isdir(split_path):
+            split_path = self.dataset_directory / split_name
+            if not split_path.is_dir():
                 continue
             annotation_file_path = self._find_annotation_file(split_path)
             if annotation_file_path is None:
@@ -221,14 +215,14 @@ class CocoDatasetVisualizer:
         while 0 <= current_index < total_image_count:
             current_image_id = image_ids[current_index]
             image_filename = image_id_to_filename[current_image_id]
-            image_path = os.path.join(split_path, image_filename)
+            image_path = split_path / image_filename
 
-            if not os.path.exists(image_path):
+            if not image_path.exists():
                 print(f"Image not found: {image_path}, skipping...")
                 current_index += 1
                 continue
 
-            image = cv2.imread(image_path)
+            image = cv2.imread(str(image_path))
             if image is None:
                 print(f"Failed to read: {image_path}, skipping...")
                 current_index += 1

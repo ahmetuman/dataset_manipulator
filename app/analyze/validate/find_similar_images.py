@@ -1,20 +1,20 @@
 from __future__ import annotations
 
 import hashlib
-import os
 import sys
+from pathlib import Path
 
 import imagehash
 from PIL import Image
 
+from app.utils.image_files import is_image_file
 
-VALID_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 PHASH_THRESHOLD = 5
 
 
 class SimilarityCalculator:
     def __init__(self, root_directory, test_run, log_file="similars.txt"):
-        self.root_directory = root_directory
+        self.root_directory = Path(root_directory)
         self.test_run = test_run
         self.log_file = log_file
 
@@ -25,12 +25,8 @@ class SimilarityCalculator:
         with open(self.log_file, "a") as f:
             f.write(text + "\n")
 
-    def _collect_images(self, root_directory):
-        images = []
-        for dirpath, _, filenames in os.walk(root_directory):
-            for filename in filenames:
-                if os.path.splitext(filename)[1].lower() in VALID_EXTENSIONS:
-                    images.append(os.path.join(dirpath, filename))
+    def _collect_images(self, root_directory: Path) -> list[Path]:
+        images = [path for path in root_directory.rglob("*") if path.is_file() and is_image_file(path)]
         return sorted(images)
 
     def _compute_file_hash(self, filepath):
@@ -44,24 +40,23 @@ class SimilarityCalculator:
         image = Image.open(filepath)
         return imagehash.phash(image)
 
-    def _get_image_info(self, filepath):
+    def _get_image_info(self, filepath: Path):
         with Image.open(filepath) as image:
             width, height = image.size
-        size_bytes = os.path.getsize(filepath)
+        size_bytes = filepath.stat().st_size
         return width, height, size_bytes
 
-    def _find_label_path(self, image_path):
-        parent = os.path.dirname(image_path)
-        grandparent = os.path.dirname(parent)
-        stem = os.path.splitext(os.path.basename(image_path))[0]
+    def _find_label_path(self, image_path: Path) -> Path | None:
+        parent = image_path.parent
+        stem = image_path.stem
 
-        if os.path.basename(parent) == "images":
-            label_path = os.path.join(grandparent, "labels", stem + ".txt")
-            if os.path.exists(label_path):
+        if parent.name == "images":
+            label_path = parent.parent / "labels" / (stem + ".txt")
+            if label_path.exists():
                 return label_path
 
-        label_path = os.path.join(parent, stem + ".txt")
-        if os.path.exists(label_path):
+        label_path = parent / (stem + ".txt")
+        if label_path.exists():
             return label_path
 
         return None
@@ -103,28 +98,26 @@ class SimilarityCalculator:
 
         for group_index, (_, group) in enumerate(duplicate_groups.items(), start=1):
             keeper, files_to_delete = self._pick_keeper_and_deletions(group)
-            keeper_width, keeper_height, keeper_size = self._get_image_info(keeper)
 
             line = (
                 f"\n\nExact Group {group_index}: \n"
-                f"  Keeping: file://{os.path.join(self.root_directory, os.path.basename(keeper))}"  # noqa E231
+                f"  Keeping: file://{self.root_directory / keeper.name}"  # noqa E231
             )
             self._log_group(line)
 
             for filepath in files_to_delete:
-                width, height, size_bytes = self._get_image_info(filepath)
                 action = "Would Delete:" if test_run else "Deleted:"
 
                 line = (
-                    f"  {action} file://{os.path.join(self.root_directory, os.path.basename(filepath))}"  # noqa E231
+                    f"  {action} file://{self.root_directory / filepath.name}"  # noqa E231
                 )
                 self._log_group(line)
 
                 if not test_run:
-                    os.remove(filepath)
+                    filepath.unlink()
                     label_path = self._find_label_path(filepath)
                     if label_path:
-                        os.remove(label_path)
+                        label_path.unlink()
                         deleted_labels += 1
 
                 deleted_images += 1
@@ -206,30 +199,28 @@ class SimilarityCalculator:
 
         for group_index, group in enumerate(groups, start=1):
             keeper, files_to_delete = self._pick_keeper_and_deletions(group)
-            keeper_width, keeper_height, keeper_size = self._get_image_info(keeper)
 
             line = (
                 f"\n\nGroup {group_index}: \n"
-                f"  Keeping: file://{os.path.join(self.root_directory, os.path.basename(keeper))}"  # noqa E231
+                f"  Keeping: file://{self.root_directory / keeper.name}"  # noqa E231
             )
             self._log_group(line)
 
             for filepath in files_to_delete:
-                width, height, size_bytes = self._get_image_info(filepath)
                 action = "Would Delete:" if test_run else "Deleting:"
 
                 line = (
-                    f"  {action} file://{os.path.join(self.root_directory, os.path.basename(filepath))}"  # noqa E231
+                    f"  {action} file://{self.root_directory / filepath.name}"  # noqa E231
                 )
                 self._log_group(line)
 
                 if not test_run:
-                    os.remove(filepath)
+                    filepath.unlink()
                     total_deleted_images += 1
 
                     label_path = self._find_label_path(filepath)
                     if label_path:
-                        os.remove(label_path)
+                        label_path.unlink()
                         total_deleted_labels += 1
                 else:
                     total_deleted_images += 1

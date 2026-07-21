@@ -8,6 +8,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
+from app.utils.yaml_config import load_class_names
+
 
 class YOLOGraphDrawer:
     def __init__(self, dataset_path, output_directory="dataset_analysis"):
@@ -47,14 +49,9 @@ class YOLOGraphDrawer:
         yaml_candidates = list(self.dataset_path.glob("*.yaml")) + list(self.dataset_path.glob("*.yml"))
         for yaml_path in yaml_candidates:
             try:
-                import yaml
-                with open(yaml_path) as file:
-                    data = yaml.safe_load(file)
-                if "names" in data:
-                    if isinstance(data["names"], dict):
-                        return data["names"]
-                    elif isinstance(data["names"], list):
-                        return {i: name for i, name in enumerate(data["names"])}
+                class_names = load_class_names(yaml_path)
+                if class_names:
+                    return class_names
             except Exception:
                 continue
         return None
@@ -195,7 +192,6 @@ class YOLOGraphDrawer:
 
         class_counts = Counter(annotation["class_id"] for annotation in all_annotations)
         areas = [annotation["width"] * annotation["height"] for annotation in all_annotations]
-        # print(sorted(areas)[0])
 
         label_figure = self._create_label_distribution_chart(class_counts, class_names)
         label_figure.savefig(self.output_directory / "label_distribution.png", dpi=150)

@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-import ast
-import os
 import random
+from pathlib import Path
 
 import cv2
 
+from app.utils.image_files import is_image_file
+from app.utils.yaml_config import load_class_names
+
 
 class YoloDatasetVisualizer:
-    SUPPORTED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
-
     CATEGORY_COLORS = [
         (0, 255, 0), (255, 0, 0), (0, 0, 255), (255, 255, 0),
         (255, 0, 255), (0, 255, 255), (128, 255, 0), (255, 128, 0),
@@ -27,45 +27,22 @@ class YoloDatasetVisualizer:
     KEY_PREVIOUS = ord("p")
 
     def __init__(self, dataset_directory, detailed_mode):
-        self.dataset_directory = dataset_directory
+        self.dataset_directory = Path(dataset_directory)
         self.detailed_mode = detailed_mode
 
         self.class_names = self._load_class_names_from_yaml()
         self.splits = self._discover_available_splits()
 
     def _load_class_names_from_yaml(self):
-        yaml_path = os.path.join(self.dataset_directory, "data.yaml")
-        if not os.path.exists(yaml_path):
+        yaml_path = self.dataset_directory / "data.yaml"
+        if not yaml_path.exists():
             return {}
+        return load_class_names(yaml_path)
 
-        class_names = {}
-        with open(yaml_path) as yaml_file:
-            for line in yaml_file:
-                line = line.strip()
-                if not line.startswith("names:"):
-                    continue
-
-                remaining_content = line[len("names:"):].strip()
-                if remaining_content.startswith("["):
-                    for index, name in enumerate(ast.literal_eval(remaining_content)):
-                        class_names[index] = name
-                    return class_names
-
-                for subsequent_line in yaml_file:
-                    subsequent_line = subsequent_line.strip()
-                    if ":" in subsequent_line and subsequent_line[0].isdigit():
-                        class_id, class_name = subsequent_line.split(":", 1)
-                        class_names[int(class_id.strip())] = class_name.strip().strip("'\"")
-                    elif subsequent_line.startswith("- "):
-                        class_names[len(class_names)] = subsequent_line[2:].strip().strip("'\"")
-                    else:
-                        break
-        return class_names
-
-    def _resolve_split_directories(self, split_path):
-        images_directory = os.path.join(split_path, "images")
-        labels_directory = os.path.join(split_path, "labels")
-        if os.path.isdir(images_directory) and os.path.isdir(labels_directory):
+    def _resolve_split_directories(self, split_path: Path) -> tuple[Path, Path]:
+        images_directory = split_path / "images"
+        labels_directory = split_path / "labels"
+        if images_directory.is_dir() and labels_directory.is_dir():
             return images_directory, labels_directory
         return split_path, split_path
 
@@ -73,27 +50,23 @@ class YoloDatasetVisualizer:
         images_directory, labels_directory = self._resolve_split_directories(split_path)
         image_label_pairs = []
 
-        sorted_filenames = sorted(os.listdir(images_directory))
-        image_filenames = [
-            filename for filename in sorted_filenames
-            if os.path.splitext(filename)[1].lower() in self.SUPPORTED_IMAGE_EXTENSIONS
-        ]
+        image_paths = sorted(
+            path for path in images_directory.iterdir()
+            if path.is_file() and is_image_file(path)
+        )
 
-        for image_filename in image_filenames:
-            name_without_extension = os.path.splitext(image_filename)[0]
-            label_filename = name_without_extension + ".txt"
-            label_path = os.path.join(labels_directory, label_filename)
-
-            if os.path.exists(label_path):
-                image_label_pairs.append((image_filename, label_filename))
+        for image_path in image_paths:
+            label_path = labels_directory / (image_path.stem + ".txt")
+            if label_path.exists():
+                image_label_pairs.append((image_path.name, label_path.name))
 
         return image_label_pairs, images_directory, labels_directory
 
     def _discover_available_splits(self):
         available_splits = []
         for split_name in ["train", "test", "valid"]:
-            split_path = os.path.join(self.dataset_directory, split_name)
-            if not os.path.isdir(split_path):
+            split_path = self.dataset_directory / split_name
+            if not split_path.is_dir():
                 continue
             image_label_pairs, images_directory, labels_directory = self._collect_image_label_pairs(split_path)
             if image_label_pairs:
@@ -190,7 +163,7 @@ class YoloDatasetVisualizer:
     def _collect_all_category_ids_in_split(self, labels_directory, image_label_pairs):
         all_category_ids = set()
         for _, label_filename in image_label_pairs:
-            label_path = os.path.join(labels_directory, label_filename)
+            label_path = labels_directory / label_filename
             for annotation in self._parse_yolo_label_file(label_path):
                 all_category_ids.add(annotation["category_id"])
         return sorted(all_category_ids)
@@ -228,7 +201,7 @@ class YoloDatasetVisualizer:
             return image_label_pairs
         filtered_pairs = []
         for image_filename, label_filename in image_label_pairs:
-            label_path = os.path.join(labels_directory, label_filename)
+            label_path = labels_directory / label_filename
             annotations = self._parse_yolo_label_file(label_path)
             if any(a["category_id"] in desired_category_ids for a in annotations):
                 filtered_pairs.append((image_filename, label_filename))
@@ -266,10 +239,10 @@ class YoloDatasetVisualizer:
         current_index = 0
         while 0 <= current_index < total_image_count:
             image_filename, label_filename = image_label_pairs[current_index]
-            image_path = os.path.join(images_directory, image_filename)
-            label_path = os.path.join(labels_directory, label_filename)
+            image_path = images_directory / image_filename
+            label_path = labels_directory / label_filename
 
-            image = cv2.imread(image_path)
+            image = cv2.imread(str(image_path))
             if image is None:
                 print(f"Failed to read: {image_path}, skipping...")
                 current_index += 1

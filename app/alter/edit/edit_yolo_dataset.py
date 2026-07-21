@@ -4,6 +4,8 @@ from pathlib import Path
 
 import yaml
 
+from app.utils.yaml_config import load_yaml_config
+
 
 class YoloLabelEditor:
     def __init__(self, dataset_path: str):
@@ -29,8 +31,7 @@ class YoloLabelEditor:
         print(f"\nDone. {len(self._original_names)} labels -> {len(merged_names)} labels.")
 
     def _load_config(self) -> dict:
-        with open(self._config_path) as file:
-            return yaml.safe_load(file)
+        return load_yaml_config(self._config_path)
 
     def _collect_renames(self) -> dict[str, str]:
         rename_map = {}

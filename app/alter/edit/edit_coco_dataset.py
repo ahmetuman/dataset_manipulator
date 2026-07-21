@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
+
+from app.utils.coco_files import ANNOTATIONS_FILENAME
+from app.utils.coco_files import load_coco
+from app.utils.coco_files import save_coco
 
 
 class CocoLabelEditor:
@@ -25,18 +28,13 @@ class CocoLabelEditor:
         print(f"\nDone. {len(self._original_names)} labels -> {len(merged_names)} labels.")
 
     def _find_annotation_files(self) -> list[Path]:
-        annotation_files = []
-        for candidate in self._dataset_path.rglob("_annotations.coco.json"):
-            annotation_files.append(candidate)
+        annotation_files = list(self._dataset_path.rglob(ANNOTATIONS_FILENAME))
         if not annotation_files:
-            raise FileNotFoundError(f"No _annotations.coco.json files found under {self._dataset_path}")
+            raise FileNotFoundError(f"No {ANNOTATIONS_FILENAME} files found under {self._dataset_path}")
         return sorted(annotation_files)
 
     def _load_original_names(self) -> list[str]:
-        first_file = self._annotation_files[0]
-        with open(first_file) as file:
-            data = json.load(file)
-
+        data = load_coco(self._annotation_files[0])
         categories_sorted = sorted(data["categories"], key=lambda category: category["id"])
         return [category["name"] for category in categories_sorted]
 
@@ -91,8 +89,7 @@ class CocoLabelEditor:
             self._remap_single_file(annotation_file, index_remap, merged_names)
 
     def _remap_single_file(self, file_path: Path, index_remap: dict[int, int], merged_names: list[str]):
-        with open(file_path) as file:
-            data = json.load(file)
+        data = load_coco(file_path)
 
         old_id_to_old_index = {}
         for category in sorted(data["categories"], key=lambda category: category["id"]):
@@ -112,5 +109,4 @@ class CocoLabelEditor:
             old_category_id = annotation["category_id"]
             annotation["category_id"] = old_id_to_new_id[old_category_id]
 
-        with open(file_path, "w") as file:
-            json.dump(data, file, indent=2, ensure_ascii=False)
+        save_coco(file_path, data, ensure_ascii=False)

@@ -1,20 +1,20 @@
 from __future__ import annotations
 
-import ast
-import os
 import shutil
+from pathlib import Path
+
+from app.utils.image_files import find_matching_image
+from app.utils.yaml_config import load_class_names
 
 
-SUPPORTED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"]
 SPLIT_NAMES = ["train", "valid", "test"]
 PARENT_CLASS_PREFIX = "Parent_"
-UNWANTED_CLASS = "Remove"
 
 
 class YoloDatasetMerger:
     def __init__(self, datasets_root_directory, output_directory):
-        self.datasets_root_directory = datasets_root_directory
-        self.output_directory = output_directory
+        self.datasets_root_directory = Path(datasets_root_directory)
+        self.output_directory = Path(output_directory)
         self.dataset_folders = []
         self.unified_class_map = {}
 
@@ -33,84 +33,43 @@ class YoloDatasetMerger:
         self._write_data_yaml()
         return merge_results
 
-    def _find_dataset_folders(self):
+    def _find_dataset_folders(self) -> list[Path]:
         folders = []
-        for entry in sorted(os.listdir(self.datasets_root_directory)):
-            dataset_path = os.path.join(self.datasets_root_directory, entry)
-            if not os.path.isdir(dataset_path):
-                continue
-            if self._dataset_has_labels(dataset_path):
-                folders.append(dataset_path)
+        for entry in sorted(self.datasets_root_directory.iterdir()):
+            if entry.is_dir() and self._dataset_has_labels(entry):
+                folders.append(entry)
         return folders
 
-    def _dataset_has_labels(self, dataset_path):
+    def _dataset_has_labels(self, dataset_path: Path) -> bool:
         for split_name in SPLIT_NAMES:
-            split_path = os.path.join(dataset_path, split_name)
-            if not os.path.isdir(split_path):
+            split_path = dataset_path / split_name
+            if not split_path.is_dir():
                 continue
             _, labels_directory = self._detect_split_layout(split_path)
-            label_files = [f for f in os.listdir(labels_directory) if f.endswith(".txt")]
-            if label_files:
+            if any(labels_directory.glob("*.txt")):
                 return True
         return False
 
     @staticmethod
-    def _detect_split_layout(split_path):
-        images_directory = os.path.join(split_path, "images")
-        labels_directory = os.path.join(split_path, "labels")
-        if os.path.isdir(images_directory) and os.path.isdir(labels_directory):
+    def _detect_split_layout(split_path: Path) -> tuple[Path, Path]:
+        images_directory = split_path / "images"
+        labels_directory = split_path / "labels"
+        if images_directory.is_dir() and labels_directory.is_dir():
             return images_directory, labels_directory
         return split_path, split_path
 
     @staticmethod
-    def _find_matching_image(images_directory, label_stem):
-        for extension in SUPPORTED_IMAGE_EXTENSIONS:
-            image_path = os.path.join(images_directory, label_stem + extension)
-            if os.path.exists(image_path):
-                return image_path
-        return None
-
-    @staticmethod
-    def _load_class_names_from_yaml(dataset_directory):
-        yaml_path = os.path.join(dataset_directory, "data.yaml")
-        if not os.path.exists(yaml_path):
+    def _load_class_names_from_yaml(dataset_directory: Path) -> dict[int, str]:
+        yaml_path = dataset_directory / "data.yaml"
+        if not yaml_path.exists():
             return {}
+        return load_class_names(yaml_path)
 
-        class_names = {}
-        with open(yaml_path) as yaml_file:
-            for line in yaml_file:
-                line = line.strip()
-                if not line.startswith("names:"):
-                    continue
-
-                value_after_key = line[len("names:"):].strip()
-                if value_after_key.startswith("["):
-                    parsed_list = ast.literal_eval(value_after_key)
-                    return {index: name for index, name in enumerate(parsed_list)}
-
-                for subsequent_line in yaml_file:
-                    subsequent_line = subsequent_line.strip()
-                    if ":" in subsequent_line and subsequent_line[0].isdigit():
-                        parts = subsequent_line.split(":", 1)
-                        class_id = int(parts[0].strip())
-                        class_name = parts[1].strip().strip("'\"")
-                        class_names[class_id] = class_name
-                    elif subsequent_line.startswith("- "):
-                        class_name = subsequent_line[2:].strip().strip("'\"")
-                        class_names[len(class_names)] = class_name
-                    else:
-                        break
-        return class_names
-
-    def _build_unified_class_map(self):
+    def _build_unified_class_map(self) -> dict[str, int]:
         all_class_names = set()
         for folder in self.dataset_folders:
             class_names = self._load_class_names_from_yaml(folder)
-            for name in class_names.values():
-                # if UNWANTED_CLASS not in name:
-                #     all_class_names.add(name)
-                all_class_names.add(name)
-
+            all_class_names.update(class_names.values())
         return {name: index for index, name in enumerate(sorted(all_class_names))}
 
     def _build_class_id_remapping(self, class_names):
@@ -124,31 +83,28 @@ class YoloDatasetMerger:
         return old_to_new_id, parent_class_ids
 
     def _merge_split(self, split_name):
-        output_images_directory = os.path.join(self.output_directory, split_name, "images")
-        output_labels_directory = os.path.join(self.output_directory, split_name, "labels")
-        os.makedirs(output_images_directory, exist_ok=True)
-        os.makedirs(output_labels_directory, exist_ok=True)
+        output_images_directory = self.output_directory / split_name / "images"
+        output_labels_directory = self.output_directory / split_name / "labels"
+        output_images_directory.mkdir(parents=True, exist_ok=True)
+        output_labels_directory.mkdir(parents=True, exist_ok=True)
 
         total_images = 0
         total_annotations = 0
         skipped_parent_annotations = 0
 
         for folder in self.dataset_folders:
-            split_path = os.path.join(folder, split_name)
-            if not os.path.isdir(split_path):
+            split_path = folder / split_name
+            if not split_path.is_dir():
                 continue
 
             images_directory, labels_directory = self._detect_split_layout(split_path)
             class_names = self._load_class_names_from_yaml(folder)
-            dataset_name = os.path.basename(folder)
+            dataset_name = folder.name
             old_to_new_id, parent_class_ids = self._build_class_id_remapping(class_names)
 
-            label_files = sorted(f for f in os.listdir(labels_directory) if f.endswith(".txt"))
-
-            for label_filename in label_files:
+            for label_file in sorted(labels_directory.glob("*.txt")):
                 result = self._process_single_label(
-                    label_filename,
-                    labels_directory,
+                    label_file,
                     images_directory,
                     dataset_name,
                     old_to_new_id,
@@ -171,24 +127,20 @@ class YoloDatasetMerger:
 
     def _process_single_label(
         self,
-        label_filename,
-        labels_directory,
-        images_directory,
+        label_file: Path,
+        images_directory: Path,
         dataset_name,
         old_to_new_id,
         parent_class_ids,
-        output_images_directory,
-        output_labels_directory,
+        output_images_directory: Path,
+        output_labels_directory: Path,
     ):
-        label_path = os.path.join(labels_directory, label_filename)
-        stem = os.path.splitext(label_filename)[0]
-
-        image_path = self._find_matching_image(images_directory, stem)
+        stem = label_file.stem
+        image_path = find_matching_image(images_directory, stem)
         if image_path is None:
             return None
 
-        with open(label_path) as label_file:
-            raw_lines = [line.strip() for line in label_file if line.strip()]
+        raw_lines = [line.strip() for line in label_file.read_text().splitlines() if line.strip()]
 
         remapped_lines = []
         skipped_parents = 0
@@ -207,26 +159,25 @@ class YoloDatasetMerger:
         if not remapped_lines:
             return None
 
-        image_extension = os.path.splitext(image_path)[1]
         prefixed_name = f"{dataset_name}_{stem}"
-        output_image_path = os.path.join(output_images_directory, prefixed_name + image_extension)
-        output_label_path = os.path.join(output_labels_directory, prefixed_name + ".txt")
+        output_image_path = output_images_directory / (prefixed_name + image_path.suffix)
+        output_label_path = output_labels_directory / (prefixed_name + ".txt")
 
         shutil.copy2(image_path, output_image_path)
-        with open(output_label_path, "w") as output_label_file:
-            output_label_file.write("\n".join(remapped_lines) + "\n")
+        output_label_path.write_text("\n".join(remapped_lines) + "\n")
 
         return {"annotations": len(remapped_lines), "skipped_parents": skipped_parents}
 
     def _write_data_yaml(self):
-        yaml_path = os.path.join(self.output_directory, "data.yaml")
         sorted_class_names = [
             name for name, _ in sorted(self.unified_class_map.items(), key=lambda item: item[1])
         ]
 
-        with open(yaml_path, "w") as yaml_file:
-            yaml_file.write(f"nc: {len(sorted_class_names)}\n")
-            yaml_file.write(f"names: {sorted_class_names}\n")
-            yaml_file.write("train: train/images\n")
-            yaml_file.write("val: valid/images\n")
-            yaml_file.write("test: test/images\n")
+        lines = [
+            f"nc: {len(sorted_class_names)}",
+            f"names: {sorted_class_names}",
+            "train: train/images",
+            "val: valid/images",
+            "test: test/images",
+        ]
+        (self.output_directory / "data.yaml").write_text("\n".join(lines) + "\n")

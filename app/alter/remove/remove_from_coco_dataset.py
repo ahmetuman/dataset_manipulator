@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-import json
 import shutil
 from pathlib import Path
 
 from tabulate import tabulate
 
+from app.utils.coco_files import find_annotation_file
+from app.utils.coco_files import load_coco
+from app.utils.coco_files import save_coco
+
 NO_ANNOTATIONS_FOLDER_NAME = "no_annotations"
-ANNOTATION_FILE_SUFFIX = "_annotations.coco.json"
 
 
 class CocoLabelRemover:
@@ -20,25 +22,17 @@ class CocoLabelRemover:
         found_splits = []
         for candidate in ["train", "valid", "val", "test"]:
             split_dir = self.dataset_root / candidate
-            if split_dir.is_dir() and self._find_annotation_file(split_dir):
+            if split_dir.is_dir() and find_annotation_file(split_dir):
                 found_splits.append(candidate)
         if not found_splits:
             raise FileNotFoundError(f"No splits with annotation files found in {self.dataset_root}")
         return found_splits
 
-    def _find_annotation_file(self, split_dir: Path) -> Path | None:
-        candidates = list(split_dir.glob(f"*{ANNOTATION_FILE_SUFFIX}"))
-        return candidates[0] if candidates else None
-
     def _load_annotation_data(self, split: str) -> dict:
-        annotation_file = self._find_annotation_file(self.dataset_root / split)
-        with open(annotation_file) as file:
-            return json.load(file)
+        return load_coco(find_annotation_file(self.dataset_root / split))
 
     def _save_annotation_data(self, split: str, data: dict):
-        annotation_file = self._find_annotation_file(self.dataset_root / split)
-        with open(annotation_file, "w") as file:
-            json.dump(data, file, indent=2)
+        save_coco(find_annotation_file(self.dataset_root / split), data)
 
     def _load_categories(self) -> dict[int, str]:
         first_split = self.split_dirs[0]
