@@ -181,6 +181,18 @@ $ dsforge yolo sanitize --dataset_directory_path "dataset_path"
 $ dsforge yolo sanitize --dataset_directory_path "dataset_path" --test_run False
 ```
 
+### Alter: Tile
+
+This feature slices large images into smaller overlapping tiles and recomputes the annotations for each tile, writing a brand new tiled dataset (the input is left untouched). It is useful for small-object detection where downscaling a whole large image to the model input size would shrink objects too much.
+
+Tiles are cut with a configurable `tile_size` (square) and `overlap` ratio. A box that straddles a tile edge is clipped to the tile and kept only if at least `min_visibility` of its original area remains inside; otherwise it is dropped. By default tiles with no remaining annotations are skipped (pass `keep_empty_tiles True` to keep them as background samples).
+
+**Example Usage:**
+
+```bash
+$ dsforge yolo tile --dataset_directory_path "dataset_path" --tile_size 640 --overlap 0.2 --min_visibility 0.3
+```
+
 ### Convert: YOLO to COCO Conversion
 
 This feature simply creates the same YOLO dataset in provided COCO format.
@@ -211,6 +223,8 @@ This feature simply creates the same YOLO dataset in provided COCO format.
 
 - Sanitize
 
+- Tile
+
 - **Convert** (to COCO)
 
 ### COCO
@@ -228,6 +242,8 @@ This feature simply creates the same YOLO dataset in provided COCO format.
 - Edit
 
 - Sanitize
+
+- Tile
 
 ## Future Direction
 

@@ -227,3 +227,4 @@ other_scripts/
 dataset_analysis/
 colored_yolo_dataset/
 distribution_analysis/
+tiled_dataset/

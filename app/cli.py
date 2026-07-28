@@ -12,6 +12,8 @@ from app.alter.remove.remove_from_coco_dataset import CocoLabelRemover
 from app.alter.remove.remove_from_yolo_dataset import YoloLabelRemover
 from app.alter.sanitize.sanitize_coco_dataset import CocoDatasetSanitizer
 from app.alter.sanitize.sanitize_yolo_dataset import YoloDatasetSanitizer
+from app.alter.tile.tile_coco_dataset import CocoDatasetTiler
+from app.alter.tile.tile_yolo_dataset import YoloDatasetTiler
 from app.analyze.distribution.analyze_coco_distribution import CocoDistributionAnalyzer
 from app.analyze.distribution.analyze_yolo_distribution import YoloDistributionAnalyzer
 from app.analyze.doctor.doctor_coco_dataset import CocoDatasetDoctor
@@ -61,6 +63,14 @@ class YOLO:
         yolo_dataset_sanitizer = YoloDatasetSanitizer(dataset_directory_path, test_run)
         yolo_dataset_sanitizer.sanitize()
 
+    def tile(self, dataset_directory_path, output_directory="tiled_dataset",
+             tile_size: int = 640, overlap: float = 0.2, min_visibility: float = 0.3,
+             keep_empty_tiles: bool = False):
+        yolo_dataset_tiler = YoloDatasetTiler(
+            dataset_directory_path, output_directory, tile_size, overlap, min_visibility, keep_empty_tiles
+        )
+        yolo_dataset_tiler.tile()
+
     def convert(self, dataset_directory_path):
         yolo_to_coco_converter = YOLOtoCOCOConverter(dataset_directory_path)
         yolo_to_coco_converter.convert()
@@ -97,6 +107,14 @@ class COCO:
     def sanitize(self, dataset_directory_path, test_run: bool = True):
         coco_dataset_sanitizer = CocoDatasetSanitizer(dataset_directory_path, test_run)
         coco_dataset_sanitizer.sanitize()
+
+    def tile(self, dataset_directory_path, output_directory="tiled_dataset",
+             tile_size: int = 640, overlap: float = 0.2, min_visibility: float = 0.3,
+             keep_empty_tiles: bool = False):
+        coco_dataset_tiler = CocoDatasetTiler(
+            dataset_directory_path, output_directory, tile_size, overlap, min_visibility, keep_empty_tiles
+        )
+        coco_dataset_tiler.tile()
 
 
 class app:
